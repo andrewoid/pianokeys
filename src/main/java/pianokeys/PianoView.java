@@ -35,8 +35,7 @@ public class PianoView extends JLayeredPane
 
     private final Supplier<PianoController> controller;
 
-    private final HashMap<Integer, JButton> blackHashMap = new HashMap<>();
-    private final HashMap<Integer, JButton> whiteHashMap = new HashMap<>();
+    private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
 
     public PianoView(Supplier<PianoController> controller)
     {
@@ -74,7 +73,7 @@ public class PianoView extends JLayeredPane
                 // calculating position across all the indexes not just the first loop
                 int keyIndex = octave * WHITE_KEY_NAMES.length + i;
                 whiteButtons[keyIndex] = button;
-                whiteHashMap.put(note, button);
+                buttonsByNote.put(note, button);
 
                 button.setBounds(keyIndex * WHITE_KEY_WIDTH, 0, WHITE_KEY_WIDTH, WHITE_KEY_HEIGHT);
                 whiteKeysPanel.add(button);
@@ -112,7 +111,7 @@ public class PianoView extends JLayeredPane
                     button.setBounds(blackKeyX, 0, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT);
                     blackKeysPanel.add(button);
 
-                    blackHashMap.put(note, button);
+                    buttonsByNote.put(note, button);
 
                     blackKeyIndex++;
                 }
@@ -289,16 +288,14 @@ public class PianoView extends JLayeredPane
 
     public void showKeyPlayed(int note, boolean pressed)
     {
-        JButton button;
+        JButton button = buttonsByNote.get(note);
         Color releasedColor;
-        if (whiteHashMap.containsKey(note))
+        if (isBlackNote(note))
         {
-            button = whiteHashMap.get(note);
-            releasedColor = (note == C4) ? C_BASE_COLOR : WHITE;
+            releasedColor = BLACK;
         } else
         {
-            button = blackHashMap.get(note);
-            releasedColor = BLACK;
+            releasedColor = (note == C4) ? C_BASE_COLOR : WHITE;
         }
 
         if (pressed)
@@ -308,6 +305,16 @@ public class PianoView extends JLayeredPane
         {
             button.setBackground(releasedColor);
         }
+    }
+
+    /**
+     * MIDI notes repeat every 12 semitones. Remainder 1, 3, 6, 8, and 10 are the black keys
+     * (C#, D#, F#, G#, A#); the rest are white keys.
+     */
+    private boolean isBlackNote(int note)
+    {
+        int pitchClass = Math.floorMod(note, 12);
+        return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
     }
 
 }
