@@ -41,22 +41,33 @@ public class BitMidiService
         {
             return Single.error(new IllegalArgumentException("track must have a page URL"));
         }
-        Single<String> downloadUrl = track.downloadUrl().isBlank()
-                ? api.page(track.pageUrl()).map(BitMidiService::readHtml)
-                    .map(html -> BitMidiHtmlParser.downloadUrl(html, track.pageUrl()))
-                : Single.just(track.downloadUrl());
-        return downloadUrl
-                .flatMap(url -> url.isBlank()
-                        ? Single.error(new IllegalArgumentException("BitMidi page has no MIDI download"))
-                        : api.download(url).map(response ->
-                            new BitMidiFile(fileName(url, track), readBytes(response))));
+        BitMidiHtmlParser htmlParser = new BitMidiHtmlParser();
+        Single<String> downloadUrl;
+        if (track.downloadUrl().isBlank())
+        {
+            downloadUrl = api.page(track.pageUrl())
+                    .map(this::readHtml)
+                    .map(html -> htmlParser.downloadUrl(html, track.pageUrl()));
+        }
+        else
+        {
+            downloadUrl = Single.just(track.downloadUrl());
+        }
+        return downloadUrl.flatMap(url ->
+        {
+            if (url.isBlank())
+            {
+                return Single.error(new IllegalArgumentException("BitMidi page has no MIDI download"));
+            }
+            return api.download(url).map(response ->
+                    new BitMidiFile(fileName(url, track), readBytes(response)));
+        });
     }
 
-    private static List<BitMidiTrack> parseSearchResponse(ResponseBody response, String baseUrl)
+    private List<BitMidiTrack> parseSearchResponse(ResponseBody response, String baseUrl)
     {
-        try (response)
-        {
-            return BitMidiHtmlParser.searchResults(response.string(), baseUrl);
+        try (response) {
+            return new BitMidiHtmlParser().searchResults(response.string(), baseUrl);
         }
         catch (IOException exception)
         {
@@ -64,10 +75,9 @@ public class BitMidiService
         }
     }
 
-    private static byte[] readBytes(ResponseBody response)
+    private byte[] readBytes(ResponseBody response)
     {
-        try (response)
-        {
+        try (response) {
             return response.bytes();
         }
         catch (IOException exception)
@@ -76,10 +86,9 @@ public class BitMidiService
         }
     }
 
-    private static String readHtml(ResponseBody response)
+    private String readHtml(ResponseBody response)
     {
-        try (response)
-        {
+        try (response) {
             return response.string();
         }
         catch (IOException exception)
@@ -88,8 +97,8 @@ public class BitMidiService
         }
     }
 
-    private static String fileName(String downloadUrl, BitMidiTrack track)
+    private String fileName(String downloadUrl, BitMidiTrack track)
     {
-        return BitMidiHtmlParser.fileName(new BitMidiTrack(track.title(), track.pageUrl(), downloadUrl));
+        return new BitMidiHtmlParser().fileName(new BitMidiTrack(track.title(), track.pageUrl(), downloadUrl));
     }
 }
