@@ -1,5 +1,8 @@
 package pianokeys;
 
+import javax.sound.midi.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import static pianokeys.Note.TIME_STEP;
@@ -35,6 +38,96 @@ public class Composition
     {
         this.name = name;
         id = new Random().nextInt();
+    }
+
+    public static Composition fromMidiResource(String resourceName)
+    {
+        Composition composition = new Composition(resourceName);
+        try (InputStream input = Composition.class.getResourceAsStream("/" + resourceName))
+        {
+            if (input == null)
+            {
+                throw new IOException("MIDI resource not found: " + resourceName);
+            }
+            composition.addNotes(readNotes(MidiSystem.getSequence(input)));
+            return composition;
+        } catch (IOException | InvalidMidiDataException e)
+        {
+            throw new IllegalStateException("Unable to load MIDI resource " + resourceName, e);
+        }
+    }
+
+    private static List<Note> readNotes(Sequence sequence)
+    {
+        if (sequence.getDivisionType() != Sequence.PPQ)
+        {
+            throw new IllegalArgumentException("Only PPQ MIDI sequences are supported");
+        }
+        Map<Long, Integer> tempos = new TreeMap<>();
+        Map<Long, List<MidiEvent>> eventsByTick = new TreeMap<>();
+        for (Track track : sequence.getTracks())
+        {
+            for (int i = 0; i < track.size(); i++)
+            {
+                MidiEvent event = track.get(i);
+                eventsByTick.computeIfAbsent(event.getTick(), ignored -> new ArrayList<>()).add(event);
+                MidiMessage message = event.getMessage();
+                if (message instanceof MetaMessage meta && meta.getType() == 0x51
+                        && meta.getData().length == 3)
+                {
+                    byte[] data = meta.getData();
+                    tempos.put(event.getTick(), ((data[0] & 0xff) << 16)
+                            | ((data[1] & 0xff) << 8) | (data[2] & 0xff));
+                }
+            }
+        }
+        List<Note> notes = new ArrayList<>();
+        Map<Integer, Deque<Double>> activeNotes = new HashMap<>();
+        for (Map.Entry<Long, List<MidiEvent>> entry : eventsByTick.entrySet())
+        {
+            double time = midiTimeSeconds(entry.getKey(), sequence.getResolution(), tempos);
+            for (MidiEvent event : entry.getValue())
+            {
+                if (!(event.getMessage() instanceof ShortMessage message))
+                {
+                    continue;
+                }
+                int key = message.getData1();
+                if (message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0)
+                {
+                    activeNotes.computeIfAbsent(key, ignored -> new ArrayDeque<>()).addLast(time);
+                } else if (message.getCommand() == ShortMessage.NOTE_OFF
+                        || (message.getCommand() == ShortMessage.NOTE_ON && message.getData2() == 0))
+                {
+                    Deque<Double> starts = activeNotes.get(key);
+                    if (starts != null && !starts.isEmpty())
+                    {
+                        notes.add(new Note(key, starts.removeFirst(), time));
+                    }
+                }
+            }
+        }
+        notes.sort(Comparator.comparingDouble(Note::startTime));
+        return notes;
+    }
+
+    private static double midiTimeSeconds(long tick, int resolution, Map<Long, Integer> tempos)
+    {
+        long previousTick = 0;
+        int microsecondsPerQuarter = 500000;
+        double microseconds = 0;
+        for (Map.Entry<Long, Integer> tempo : tempos.entrySet())
+        {
+            if (tempo.getKey() > tick)
+            {
+                break;
+            }
+            microseconds += (tempo.getKey() - previousTick) * (double) microsecondsPerQuarter / resolution;
+            previousTick = tempo.getKey();
+            microsecondsPerQuarter = tempo.getValue();
+        }
+        microseconds += (tick - previousTick) * (double) microsecondsPerQuarter / resolution;
+        return microseconds / 1_000_000.0;
     }
 
     public void setName(String name) {
@@ -138,5 +231,4 @@ public class Composition
         return duration;
     }
 }
-
 

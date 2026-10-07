@@ -1,9 +1,6 @@
 package pianokeys;
 
 import javax.sound.midi.*;
-import javax.swing.*;
-import java.nio.channels.Channel;
-
 public class PianoSound
 {
     // MIDI note constants
@@ -31,6 +28,7 @@ public class PianoSound
 
     private final Synthesizer synthesizer;
     private final MidiChannel channel;
+    private final MidiChannel songChannel;
 
     public static final int[] whiteNotes = {C4, D4, E4, F4, G4, A4, B4, C5};
     public static final int[] blackNotes = {C4_SHARP, D4_SHARP, -1, F4_SHARP, G4_SHARP, A4_SHARP, -1};
@@ -39,8 +37,15 @@ public class PianoSound
 
     public PianoSound(Synthesizer synthesizer, MidiChannel channel) throws MidiUnavailableException
     {
+        this(synthesizer, channel, channel);
+    }
+
+    public PianoSound(Synthesizer synthesizer, MidiChannel channel, MidiChannel songChannel)
+            throws MidiUnavailableException
+    {
         this.synthesizer = synthesizer;
         this.channel = channel;
+        this.songChannel = songChannel;
     }
 
     public MidiChannel getChannel()
@@ -61,6 +66,21 @@ public class PianoSound
     public void stopNote(int note)
     {
         channel.noteOff(note);
+    }
+
+    public void playSongNote(int note)
+    {
+        songChannel.noteOn(note, 90);
+    }
+
+    public void stopSongNote(int note)
+    {
+        songChannel.noteOff(note);
+    }
+
+    public void silenceSong()
+    {
+        songChannel.allNotesOff();
     }
 
     public void cleanup()

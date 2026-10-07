@@ -25,8 +25,6 @@ public class PianoGui extends JFrame
     private static final int OCTAVES = 7;
 
     //dropdown to change instrument
-    private final JComboBox<String> instrumentDropdown;
-
     // MIDI sound system
     private PianoSound sound;
 
@@ -37,10 +35,12 @@ public class PianoGui extends JFrame
         initMidi();
         midiCleanup();
         setUpFrame();
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        setContentPane(contentPanel);
 
-        Composition composition = new Composition();
+        Composition composition = Composition.fromMidiResource("twinkle-twinkle-little-star.mid");
         CompositionView compositionView = new CompositionView(composition);
-        compositionView.setPreferredSize(new Dimension(2000, 400));
+        FallingNotesView fallingNotesView = new FallingNotesView(composition);
 
         // Because PianoController needs to access PianoView and PianoView needs PianoController
         // this creates a circular dependency. One way to fix this is to create a Supplier that is passed
@@ -48,42 +48,18 @@ public class PianoGui extends JFrame
         Supplier<PianoController> controllerSupplier = () -> controller;
 
         PianoView pianoView = new PianoView(controllerSupplier);
-        JScrollPane pianoScrollPane = createScrollPane(pianoView);
-
         // Adding the controller object
         controller = new PianoController(compositionView, sound, composition, pianoView);
+        controller.setFallingNotesView(fallingNotesView);
 
-        add(pianoScrollPane, BorderLayout.SOUTH);
-        // vertical and  horizontal scroll panes for CompositionView
-        JScrollPane compositionScrollPane = new JScrollPane(
-                compositionView,
-                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-                JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS
-        );
-        compositionScrollPane.setPreferredSize(new Dimension(800, 200));
-
-        add(compositionScrollPane);
+        JPanel keyboardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        keyboardPanel.add(pianoView);
+        keyboardPanel.setPreferredSize(new Dimension(1470, 250));
+        contentPanel.add(keyboardPanel, BorderLayout.SOUTH);
+        contentPanel.add(fallingNotesView, BorderLayout.CENTER);
 
         // buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton erase = new JButton(new ImageIcon(getClass().getResource("/images/erase.png")));
-        JButton restart = new JButton(new ImageIcon(getClass().getResource("/images/restart.png")));
-        JButton record = new JButton(new ImageIcon(getClass().getResource("/images/record.png")));
         JButton play = new JButton(new ImageIcon(getClass().getResource("/images/play.png")));
-
-        // erase button - calling controller
-        erase.addActionListener(e ->
-        {
-            controller.eraseComposition();
-        });
-
-        // restart button
-        restart.addActionListener(e ->
-        {
-            controller.restartComposition();
-        });
-
-
         play.addActionListener(e ->
         {
             if (controller.playComposition())
@@ -96,31 +72,18 @@ public class PianoGui extends JFrame
             }
         });
 
-        buttonPanel.add(erase);
-        buttonPanel.add(restart);
-        buttonPanel.add(record);
-        buttonPanel.add(play);
-
-        // Making the instrument dropdown look like a button
-        instrumentDropdown = new JComboBox<>(PianoSound.instruments);
-        instrumentDropdown.setFont(new Font("Arial", Font.BOLD, 16));
-        instrumentDropdown.setBackground(WHITE);
-        instrumentDropdown.setForeground(BLACK);
-        instrumentDropdown.setBorder(BorderFactory.createLineBorder(GRAY, 2));
-
-        // Link the combo box to instrument change
-        instrumentDropdown.addActionListener(e ->
-        {
-            String instrument = (String) instrumentDropdown.getSelectedItem();
-            controller.changeInstrument(instrument);
-        });
-
-        // adding it to the button panel
-        buttonPanel.add(instrumentDropdown);
-
-        add(buttonPanel, BorderLayout.NORTH);
-
-        centerOnMiddleC(pianoScrollPane);
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JLabel songTitle = new JLabel("Twinkle Twinkle Little Star", SwingConstants.CENTER);
+        songTitle.setFont(new Font("Arial", Font.BOLD, 24));
+        topPanel.add(songTitle, BorderLayout.NORTH);
+        JPanel playPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        playPanel.add(play);
+        topPanel.add(playPanel, BorderLayout.SOUTH);
+        contentPanel.add(topPanel, BorderLayout.NORTH);
+        fallingNotesView.setFinishedListener(() ->
+                play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
+        contentPanel.revalidate();
+        contentPanel.repaint();
 
     }
 
@@ -139,8 +102,8 @@ public class PianoGui extends JFrame
         {
             Synthesizer synthesizer = MidiSystem.getSynthesizer();
             synthesizer.open();
-            MidiChannel channel = synthesizer.getChannels()[0];
-            sound = new PianoSound(synthesizer, channel);
+            MidiChannel[] channels = synthesizer.getChannels();
+            sound = new PianoSound(synthesizer, channels[0], channels[1]);
         } catch (MidiUnavailableException e)
         {
             e.printStackTrace();
@@ -159,33 +122,6 @@ public class PianoGui extends JFrame
                     sound.cleanup();
                 }
             }
-        });
-    }
-
-    private JScrollPane createScrollPane(JLayeredPane layeredPane)
-    {
-        // uses a scroll method so that you can easily see all the keys
-        return new JScrollPane(
-                layeredPane,
-                JScrollPane.VERTICAL_SCROLLBAR_NEVER,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
-        );
-    }
-
-    private void centerOnMiddleC(JScrollPane scrollPane)
-    {
-        // Centering the scroll pane to open on middle C - in octave 4 (0-based, so 3 is the 4th octave)
-        SwingUtilities.invokeLater(() ->
-        {
-            int middleCoctave = 3;
-            int middleCindex = middleCoctave * WHITE_KEY_NAMES.length;
-
-            int middleCx = middleCindex * WHITE_KEY_WIDTH - (scrollPane.getViewport().getWidth() / 2)
-                    + (WHITE_KEY_WIDTH / 2);
-            middleCx = Math.max(0, Math.min(middleCx, scrollPane.getHorizontalScrollBar().getMaximum()
-                    - scrollPane.getViewport().getWidth()));
-
-            scrollPane.getHorizontalScrollBar().setValue(middleCx);
         });
     }
 

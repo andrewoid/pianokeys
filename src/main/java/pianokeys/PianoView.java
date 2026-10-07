@@ -19,10 +19,10 @@ public class PianoView extends JLayeredPane
     private static final String[] BLACK_KEY_NAMES = {"C#", "D#", "", "F#", "G#", "A#", ""};
 
     // White keys
-    private static final int WHITE_KEY_WIDTH = 50;
+    private static final int WHITE_KEY_WIDTH = 30;
     private static final int WHITE_KEY_HEIGHT = 250;
     // Black keys
-    private static final int BLACK_KEY_WIDTH = 30;
+    private static final int BLACK_KEY_WIDTH = 18;
     private static final int BLACK_KEY_HEIGHT = 170;
 
     private static final int OCTAVES = 7;
@@ -289,6 +289,10 @@ public class PianoView extends JLayeredPane
     public void showKeyPlayed(int note, boolean pressed)
     {
         JButton button = buttonsByNote.get(note);
+        if (button == null)
+        {
+            return;
+        }
         Color releasedColor;
         if (isBlackNote(note))
         {
@@ -305,6 +309,25 @@ public class PianoView extends JLayeredPane
         {
             button.setBackground(releasedColor);
         }
+    }
+
+    public void showKeyHit(int note, Color color)
+    {
+        JButton button = buttonsByNote.get(note);
+        if (button == null)
+        {
+            return;
+        }
+        button.setBackground(color);
+        Timer timer = new Timer(250, event ->
+        {
+            if (button.getBackground().equals(color))
+            {
+                showKeyPlayed(note, false);
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 
     /**
