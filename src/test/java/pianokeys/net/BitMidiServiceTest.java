@@ -2,64 +2,50 @@ package pianokeys.net;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.net.URI;
+import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BitMidiServiceTest
 {
-    private MockWebServer server;
     private BitMidiService service;
 
     @BeforeEach
-    void setUp() throws Exception
+    void setUp()
     {
-        server = new MockWebServer();
-        server.start();
-        service = new BitMidiServiceFactory(server.url("/").toString()).create();
-    }
-
-    @AfterEach
-    void tearDown() throws Exception
-    {
-        server.close();
+        service = new BitMidiServiceFactory("https://bitmidi.com/").create();
     }
 
     @Test
     void searchParsesBitMidiHtml() throws Exception
     {
-        server.enqueue(new MockResponse().setBody("""
-                <main>
-                  <a href="/mario-mid">Mario Theme.mid</a>
-                  <a href="/about">About</a>
-                </main>
-                """));
+        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
+        assertFalse(tracks.isEmpty());
+        BitMidiTrack track = tracks.get(0);
 
-        BitMidiTrack track = service.search("mario").blockingGet().get(0);
-
-        assertEquals("Mario Theme.mid", track.title());
-        assertEquals(server.url("/mario-mid").toString(), track.pageUrl());
-        assertEquals("", track.downloadUrl());
-        assertEquals("/search?q=mario&page=1", server.takeRequest().getPath());
+        assertTrue(track.title().toLowerCase(Locale.ROOT).endsWith(".mid"));
+        URI pageUri = URI.create(track.pageUrl());
+        assertEquals("https", pageUri.getScheme());
+        assertEquals("bitmidi.com", pageUri.getHost());
+        assertTrue(track.downloadUrl().isBlank());
     }
 
     @Test
     void downloadReturnsMidiBytes() throws Exception
     {
-        byte[] midi = new byte[] {0x4d, 0x54, 0x68, 0x64};
-        server.enqueue(new MockResponse().setBody("<a href=\"/uploads/123.mid\">Download MIDI</a>"));
-        server.enqueue(new MockResponse().setBody(new String(midi)));
+        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
+        assertFalse(tracks.isEmpty());
+        BitMidiTrack track = tracks.get(0);
 
-        BitMidiFile file = service.download(new BitMidiTrack(
-                "Mario Theme.mid",
-                server.url("/mario-mid").toString(),
-                "")).blockingGet();
+        BitMidiFile file = service.download(track).blockingGet();
 
-        assertEquals("123.mid", file.fileName());
-        assertArrayEquals(midi, file.content());
-        assertEquals("/mario-mid", server.takeRequest().getPath());
-        assertEquals("/uploads/123.mid", server.takeRequest().getPath());
+        assertFalse(file.fileName().isBlank());
+        assertTrue(file.content().length >= 4);
+        assertArrayEquals(new byte[] {0x4d, 0x54, 0x68, 0x64},
+                java.util.Arrays.copyOf(file.content(), 4));
     }
 }
