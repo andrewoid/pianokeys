@@ -53,6 +53,8 @@ public class PianoGui extends JFrame
         // Adding the controller object
         controller = new PianoController(compositionView, sound, composition, pianoView);
 
+        new KeyboardInputHandler(controllerSupplier, pianoView).registerOn(getRootPane());
+
         add(pianoScrollPane, BorderLayout.SOUTH);
         // vertical and  horizontal scroll panes for CompositionView
         JScrollPane compositionScrollPane = new JScrollPane(

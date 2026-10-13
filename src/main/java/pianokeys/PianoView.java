@@ -6,6 +6,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.awt.Color.*;
@@ -36,6 +37,9 @@ public class PianoView extends JLayeredPane
     private final Supplier<PianoController> controller;
 
     private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
+
+    // which notes currently show a keyboard-shortcut badge, so they can be cleared when the octave shifts
+    private final Map<Integer, JLabel> keyboardLabelsByNote = new HashMap<>();
 
     public PianoView(Supplier<PianoController> controller)
     {
@@ -315,6 +319,64 @@ public class PianoView extends JLayeredPane
     {
         int pitchClass = Math.floorMod(note, 12);
         return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
+    }
+
+    /**
+     * Shows a small keyboard-shortcut badge in the corner of each note's key, replacing
+     * whichever badges were shown before. Called once at startup and again every time the
+     * keyboard octave shifts, so the badges always show what each key currently plays.
+     */
+    public void setKeyboardLabels(Map<Integer, String> noteToKeyLabel)
+    {
+        for (Map.Entry<Integer, JLabel> entry : keyboardLabelsByNote.entrySet())
+        {
+            JButton button = buttonsByNote.get(entry.getKey());
+            if (button != null)
+            {
+                button.remove(entry.getValue());
+                button.revalidate();
+                button.repaint();
+            }
+        }
+        keyboardLabelsByNote.clear();
+
+        for (Map.Entry<Integer, String> entry : noteToKeyLabel.entrySet())
+        {
+            int note = entry.getKey();
+            JButton button = buttonsByNote.get(note);
+            if (button == null)
+            {
+                continue;
+            }
+
+            JLabel label = createKeyboardLabel(entry.getValue());
+            button.setLayout(null);
+            button.add(label);
+            label.setBounds(2, 2, 16, 12);
+
+            keyboardLabelsByNote.put(note, label);
+        }
+    }
+
+    private JLabel createKeyboardLabel(String text)
+    {
+        // overridden contains() lets clicks pass through to the button underneath,
+        // so the badge is purely visual and doesn't interfere with playing the key
+        JLabel label = new JLabel(text)
+        {
+            @Override
+            public boolean contains(int x, int y)
+            {
+                return false;
+            }
+        };
+        label.setFont(new Font("Arial", Font.BOLD, 9));
+        label.setForeground(BLACK);
+        label.setOpaque(true);
+        label.setBackground(new Color(255, 255, 255, 220));
+        label.setBorder(BorderFactory.createLineBorder(GRAY, 1));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        return label;
     }
 
 }
