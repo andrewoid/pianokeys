@@ -16,19 +16,19 @@ public class PianoView extends JLayeredPane
 {
 
     // declared everything
-    private final String[] WHITE_KEY_NAMES = {"C", "D", "E", "F", "G", "A", "B"};
-    private final String[] BLACK_KEY_NAMES = {"C#", "D#", "", "F#", "G#", "A#", ""};
+    private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
+    private final String[] blackKeyNames = {"C#", "D#", "", "F#", "G#", "A#", ""};
 
     // White keys
-    private final int WHITE_KEY_WIDTH = 30;
-    private final int WHITE_KEY_HEIGHT = 250;
+    private final int whiteKeyWidth = 30;
+    private final int whiteKeyHeight = 250;
     // Black keys
-    private final int BLACK_KEY_WIDTH = 18;
-    private final int BLACK_KEY_HEIGHT = 170;
+    private final int blackKeyWidth = 18;
+    private final int blackKeyHeight = 170;
 
     private final int octaves = 7;
 
-    private final JButton[] whiteButtons = new JButton[WHITE_KEY_NAMES.length * octaves];
+    private final JButton[] whiteButtons = new JButton[whiteKeyNames.length * octaves];
     private final JButton[] blackButtons = new JButton[5 * octaves];
 
     private static final Color C_BASE_COLOR = new Color(255, 245, 200);
@@ -62,11 +62,11 @@ public class PianoView extends JLayeredPane
         JPanel whiteKeysPanel = createWhiteKeysPanel();
         JPanel blackKeysPanel = createBlackKeysPanel();
 
-        int totalWidth = WHITE_KEY_NAMES.length * octaves * WHITE_KEY_WIDTH;
-        this.setPreferredSize(new Dimension(totalWidth, WHITE_KEY_HEIGHT));
+        int totalWidth = whiteKeyNames.length * octaves * whiteKeyWidth;
+        this.setPreferredSize(new Dimension(totalWidth, whiteKeyHeight));
 
-        whiteKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
-        blackKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
+        whiteKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
+        blackKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
 
         // using different layers to add the panels
         this.add(whiteKeysPanel, Integer.valueOf(0));
@@ -84,17 +84,17 @@ public class PianoView extends JLayeredPane
         // switched out i for keyIndex so that we can loop through without them all overlapping
         for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < WHITE_KEY_NAMES.length; i++)
+            for (int i = 0; i < whiteKeyNames.length; i++)
             {
                 int note = getWhiteNoteForOctave(octave, i);
-                JButton button = createWhitePianoKey(WHITE_KEY_NAMES[i], note);
+                JButton button = createWhitePianoKey(whiteKeyNames[i], note);
 
                 // calculating position across all the indexes not just the first loop
-                int keyIndex = octave * WHITE_KEY_NAMES.length + i;
+                int keyIndex = octave * whiteKeyNames.length + i;
                 whiteButtons[keyIndex] = button;
                 buttonsByNote.put(note, button);
 
-                button.setBounds(keyIndex * WHITE_KEY_WIDTH, 0, WHITE_KEY_WIDTH, WHITE_KEY_HEIGHT);
+                button.setBounds(keyIndex * whiteKeyWidth, 0, whiteKeyWidth, whiteKeyHeight);
                 whiteKeysPanel.add(button);
             }
         }
@@ -110,24 +110,24 @@ public class PianoView extends JLayeredPane
         int blackKeyIndex = 0;
         for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < BLACK_KEY_NAMES.length; i++)
+            for (int i = 0; i < blackKeyNames.length; i++)
             {
-                if (!BLACK_KEY_NAMES[i].isEmpty())
+                if (!blackKeyNames[i].isEmpty())
                 {
                     int note = getBlackNoteForOctave(octave, i);
                     if (note == -1)
                     {
                         continue;
                     } // skip keys that don't exist (like between E-F or B-C)
-                    JButton button = createBlackPianoKey(BLACK_KEY_NAMES[i], note);
+                    JButton button = createBlackPianoKey(blackKeyNames[i], note);
 
                     blackButtons[blackKeyIndex] = button;
 
-                    int whiteKeyPosition = octave * WHITE_KEY_NAMES.length + i;
+                    int whiteKeyPosition = octave * whiteKeyNames.length + i;
 
                     // make sure that the black keys are between the white keys
-                    int blackKeyX = (whiteKeyPosition * WHITE_KEY_WIDTH) + WHITE_KEY_WIDTH - (BLACK_KEY_WIDTH / 2);
-                    button.setBounds(blackKeyX, 0, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT);
+                    int blackKeyX = (whiteKeyPosition * whiteKeyWidth) + whiteKeyWidth - (blackKeyWidth / 2);
+                    button.setBounds(blackKeyX, 0, blackKeyWidth, blackKeyHeight);
                     blackKeysPanel.add(button);
 
                     buttonsByNote.put(note, button);
@@ -144,12 +144,12 @@ public class PianoView extends JLayeredPane
      */
     public int getOctaveStartX(int octaveIndex)
     {
-        return octaveIndex * WHITE_KEY_NAMES.length * WHITE_KEY_WIDTH;
+        return octaveIndex * whiteKeyNames.length * whiteKeyWidth;
     }
 
     public int getWhiteKeyWidth()
     {
-        return WHITE_KEY_WIDTH;
+        return whiteKeyWidth;
     }
 
     private int getWhiteNoteForOctave(int octave, int whiteIndex)
@@ -408,10 +408,10 @@ public class PianoView extends JLayeredPane
             }
 
             boolean isBlack = isBlackNote(note);
-            int keyWidth = isBlack ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH;
+            int keyWidth = isBlack ? blackKeyWidth : whiteKeyWidth;
             int labelY = isBlack
-                    ? BLACK_KEY_HEIGHT - KEYBOARD_LABEL_HEIGHT - KEYBOARD_LABEL_BOTTOM_MARGIN
-                    : BLACK_KEY_HEIGHT + WHITE_KEY_LABEL_TOP_MARGIN;
+                    ? blackKeyHeight - KEYBOARD_LABEL_HEIGHT - KEYBOARD_LABEL_BOTTOM_MARGIN
+                    : blackKeyHeight + WHITE_KEY_LABEL_TOP_MARGIN;
 
             JLabel label = createKeyboardLabel(entry.getValue());
             button.setLayout(null);

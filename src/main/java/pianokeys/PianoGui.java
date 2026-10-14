@@ -55,7 +55,7 @@ public class PianoGui extends JFrame
         controller = new PianoController(compositionView, sound, composition, pianoView);
         controller.setFallingNotesController(fallingNotesController);
 
-        new KeyboardInputHandler(controllerSupplier, pianoView,
+        new KeyboardInputHandler(controllerSupplier, pianoView, sound,
                 octaveIndex -> centerOnOctave(pianoScrollPane, pianoView, octaveIndex))
                 .registerOn(getRootPane());
 
