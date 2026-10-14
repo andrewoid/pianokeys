@@ -2,6 +2,7 @@ package pianokeys.net;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,7 +19,7 @@ final class BitMidiHtmlParser
             String title = link.text().trim();
             String pageUrl = link.absUrl("href");
             // Match the BitMidi link pattern: text ends in .mid and href looks like a MIDI file URL.
-            if (!title.toLowerCase().endsWith(".mid") || !pageUrl.matches(".+/.+-mid(?:[?#].*)?$") )
+            if (!title.toLowerCase().endsWith(".mid") || !pageUrl.matches(".+/.+-mid(?:[?#].*)?$"))
             {
                 continue;
             }

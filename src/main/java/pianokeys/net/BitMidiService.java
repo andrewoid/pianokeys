@@ -1,9 +1,10 @@
 package pianokeys.net;
 
 import io.reactivex.rxjava3.core.Single;
+import okhttp3.ResponseBody;
+
 import java.io.IOException;
 import java.util.List;
-import okhttp3.ResponseBody;
 
 public class BitMidiService
 {
@@ -48,8 +49,7 @@ public class BitMidiService
             downloadUrl = api.page(track.pageUrl())
                     .map(this::readHtml)
                     .map(html -> htmlParser.downloadUrl(html, track.pageUrl()));
-        }
-        else
+        } else
         {
             downloadUrl = Single.just(track.downloadUrl());
         }
@@ -66,10 +66,10 @@ public class BitMidiService
 
     private List<BitMidiTrack> parseSearchResponse(ResponseBody response, String baseUrl)
     {
-        try (response) {
+        try (response)
+        {
             return new BitMidiHtmlParser().searchResults(response.string(), baseUrl);
-        }
-        catch (IOException exception)
+        } catch (IOException exception)
         {
             throw new IllegalStateException("Unable to read BitMidi search response", exception);
         }
@@ -77,10 +77,10 @@ public class BitMidiService
 
     private byte[] readBytes(ResponseBody response)
     {
-        try (response) {
+        try (response)
+        {
             return response.bytes();
-        }
-        catch (IOException exception)
+        } catch (IOException exception)
         {
             throw new IllegalStateException("Unable to read BitMidi download", exception);
         }
@@ -88,10 +88,10 @@ public class BitMidiService
 
     private String readHtml(ResponseBody response)
     {
-        try (response) {
+        try (response)
+        {
             return response.string();
-        }
-        catch (IOException exception)
+        } catch (IOException exception)
         {
             throw new IllegalStateException("Unable to read BitMidi page", exception);
         }
