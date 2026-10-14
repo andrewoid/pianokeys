@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 
 public class PianoGui extends JFrame
 {
-
     private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
 
     // White keys
@@ -20,6 +19,9 @@ public class PianoGui extends JFrame
     private final int whiteKeyHeight = 250;
 
     private final int octaves = 7;
+
+    // index of the keyboard-shortcut home octave, matching KeyboardInputHandler's un-shifted mapping
+    private static final int HOME_OCTAVE_INDEX = 3;
 
     //dropdown to change instrument
     // MIDI sound system
@@ -48,14 +50,23 @@ public class PianoGui extends JFrame
         Supplier<PianoController> controllerSupplier = () -> controller;
 
         PianoView pianoView = new PianoView(controllerSupplier, sound);
+        JScrollPane pianoScrollPane = createScrollPane(pianoView);
         // Adding the controller object
         controller = new PianoController(compositionView, sound, composition, pianoView);
         controller.setFallingNotesController(fallingNotesController);
 
-        JPanel keyboardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        keyboardPanel.add(pianoView);
-        keyboardPanel.setPreferredSize(new Dimension(1470, 250));
-        contentPanel.add(keyboardPanel, BorderLayout.SOUTH);
+        new KeyboardInputHandler(controllerSupplier, pianoView,
+                octaveIndex -> centerOnOctave(pianoScrollPane, pianoView, octaveIndex))
+                .registerOn(getRootPane());
+
+        contentPanel.add(pianoScrollPane, BorderLayout.SOUTH);
+        // vertical and  horizontal scroll panes for CompositionView
+        JScrollPane compositionScrollPane = new JScrollPane(
+                compositionView,
+                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+                JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS
+        );
+        compositionScrollPane.setPreferredSize(new Dimension(800, 200));
 
         FallingNotesView fallingNotesView = fallingNotesController.getView();
         contentPanel.add(fallingNotesView, BorderLayout.CENTER);
@@ -102,6 +113,7 @@ public class PianoGui extends JFrame
                 play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
         contentPanel.revalidate();
         contentPanel.repaint();
+        centerOnOctave(pianoScrollPane, pianoView, HOME_OCTAVE_INDEX);
 
     }
 
@@ -154,20 +166,19 @@ public class PianoGui extends JFrame
         );
     }
 
-    private void centerOnMiddleC(JScrollPane scrollPane)
+    private void centerOnOctave(JScrollPane scrollPane, PianoView pianoView, int octaveIndex)
     {
-        // Centering the scroll pane to open on middle C - in octave 4 (0-based, so 3 is the 4th octave)
+        // Centers the scroll pane's viewport on the given octave's first white key.
         SwingUtilities.invokeLater(() ->
         {
-            int middleCoctave = 3;
-            int middleCindex = middleCoctave * whiteKeyNames.length;
+            int octaveStartX = pianoView.getOctaveStartX(octaveIndex);
 
-            int middleCx = middleCindex * whiteKeyWidth - (scrollPane.getViewport().getWidth() / 2)
-                    + (whiteKeyWidth / 2);
-            middleCx = Math.max(0, Math.min(middleCx, scrollPane.getHorizontalScrollBar().getMaximum()
+            int targetX = octaveStartX - (scrollPane.getViewport().getWidth() / 2)
+                    + (pianoView.getWhiteKeyWidth() / 2);
+            targetX = Math.max(0, Math.min(targetX, scrollPane.getHorizontalScrollBar().getMaximum()
                     - scrollPane.getViewport().getWidth()));
 
-            scrollPane.getHorizontalScrollBar().setValue(middleCx);
+            scrollPane.getHorizontalScrollBar().setValue(targetX);
         });
     }
 

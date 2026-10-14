@@ -19,8 +19,6 @@ andrewoid
 sbleier
 saharon613
 
-JoelleBensadon
-EfratKreslavskiy
 hannahl06
 naavamp
 JoelleBensadon

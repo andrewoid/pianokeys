@@ -6,6 +6,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.swing.border.Border;
 
@@ -15,19 +16,19 @@ public class PianoView extends JLayeredPane
 {
 
     // declared everything
-    private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
-    private final String[] blackKeyNames = {"C#", "D#", "", "F#", "G#", "A#", ""};
+    private final String[] WHITE_KEY_NAMES = {"C", "D", "E", "F", "G", "A", "B"};
+    private final String[] BLACK_KEY_NAMES = {"C#", "D#", "", "F#", "G#", "A#", ""};
 
     // White keys
-    private final int whiteKeyWidth = 30;
-    private final int whiteKeyHeight = 250;
+    private final int WHITE_KEY_WIDTH = 30;
+    private final int WHITE_KEY_HEIGHT = 250;
     // Black keys
-    private final int blackKeyWidth = 18;
-    private final int blackKeyHeight = 170;
+    private final int BLACK_KEY_WIDTH = 18;
+    private final int BLACK_KEY_HEIGHT = 170;
 
     private final int octaves = 7;
 
-    private final JButton[] whiteButtons = new JButton[whiteKeyNames.length * octaves];
+    private final JButton[] whiteButtons = new JButton[WHITE_KEY_NAMES.length * octaves];
     private final JButton[] blackButtons = new JButton[5 * octaves];
 
     private static final Color C_BASE_COLOR = new Color(255, 245, 200);
@@ -43,18 +44,29 @@ public class PianoView extends JLayeredPane
 
     private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
 
+    // which notes currently show a keyboard-shortcut badge, so they can be cleared when the octave shifts
+    private final Map<Integer, JLabel> keyboardLabelsByNote = new HashMap<>();
+
+    private static final int KEYBOARD_LABEL_WIDTH = 16;
+    private static final int KEYBOARD_LABEL_HEIGHT = 12;
+    private static final int KEYBOARD_LABEL_BOTTOM_MARGIN = 2;
+    // on white keys, sit just below where the black keys end, rather than at the very
+    // bottom of the (much taller) white key, so the badge stays visible on shorter screens
+    private static final int WHITE_KEY_LABEL_TOP_MARGIN = 4;
+
     public PianoView(Supplier<PianoController> controller, PianoSound sound)
+
     {
         this.controller = controller;
         this.sound = sound;
         JPanel whiteKeysPanel = createWhiteKeysPanel();
         JPanel blackKeysPanel = createBlackKeysPanel();
 
-        int totalWidth = whiteKeyNames.length * octaves * whiteKeyWidth;
-        this.setPreferredSize(new Dimension(totalWidth, whiteKeyHeight));
+        int totalWidth = WHITE_KEY_NAMES.length * octaves * WHITE_KEY_WIDTH;
+        this.setPreferredSize(new Dimension(totalWidth, WHITE_KEY_HEIGHT));
 
-        whiteKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
-        blackKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
+        whiteKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
+        blackKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
 
         // using different layers to add the panels
         this.add(whiteKeysPanel, Integer.valueOf(0));
@@ -72,17 +84,17 @@ public class PianoView extends JLayeredPane
         // switched out i for keyIndex so that we can loop through without them all overlapping
         for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < whiteKeyNames.length; i++)
+            for (int i = 0; i < WHITE_KEY_NAMES.length; i++)
             {
                 int note = getWhiteNoteForOctave(octave, i);
-                JButton button = createWhitePianoKey(whiteKeyNames[i], note);
+                JButton button = createWhitePianoKey(WHITE_KEY_NAMES[i], note);
 
                 // calculating position across all the indexes not just the first loop
-                int keyIndex = octave * whiteKeyNames.length + i;
+                int keyIndex = octave * WHITE_KEY_NAMES.length + i;
                 whiteButtons[keyIndex] = button;
                 buttonsByNote.put(note, button);
 
-                button.setBounds(keyIndex * whiteKeyWidth, 0, whiteKeyWidth, whiteKeyHeight);
+                button.setBounds(keyIndex * WHITE_KEY_WIDTH, 0, WHITE_KEY_WIDTH, WHITE_KEY_HEIGHT);
                 whiteKeysPanel.add(button);
             }
         }
@@ -98,24 +110,24 @@ public class PianoView extends JLayeredPane
         int blackKeyIndex = 0;
         for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < blackKeyNames.length; i++)
+            for (int i = 0; i < BLACK_KEY_NAMES.length; i++)
             {
-                if (!blackKeyNames[i].isEmpty())
+                if (!BLACK_KEY_NAMES[i].isEmpty())
                 {
                     int note = getBlackNoteForOctave(octave, i);
                     if (note == -1)
                     {
                         continue;
                     } // skip keys that don't exist (like between E-F or B-C)
-                    JButton button = createBlackPianoKey(blackKeyNames[i], note);
+                    JButton button = createBlackPianoKey(BLACK_KEY_NAMES[i], note);
 
                     blackButtons[blackKeyIndex] = button;
 
-                    int whiteKeyPosition = octave * whiteKeyNames.length + i;
+                    int whiteKeyPosition = octave * WHITE_KEY_NAMES.length + i;
 
                     // make sure that the black keys are between the white keys
-                    int blackKeyX = (whiteKeyPosition * whiteKeyWidth) + whiteKeyWidth - (blackKeyWidth / 2);
-                    button.setBounds(blackKeyX, 0, blackKeyWidth, blackKeyHeight);
+                    int blackKeyX = (whiteKeyPosition * WHITE_KEY_WIDTH) + WHITE_KEY_WIDTH - (BLACK_KEY_WIDTH / 2);
+                    button.setBounds(blackKeyX, 0, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT);
                     blackKeysPanel.add(button);
 
                     buttonsByNote.put(note, button);
@@ -125,6 +137,19 @@ public class PianoView extends JLayeredPane
             }
         }
         return blackKeysPanel;
+    }
+
+    /**
+     * @return the pixel X position where the given octave's first (leftmost) white key starts
+     */
+    public int getOctaveStartX(int octaveIndex)
+    {
+        return octaveIndex * WHITE_KEY_NAMES.length * WHITE_KEY_WIDTH;
+    }
+
+    public int getWhiteKeyWidth()
+    {
+        return WHITE_KEY_WIDTH;
     }
 
     private int getWhiteNoteForOctave(int octave, int whiteIndex)
@@ -347,6 +372,79 @@ public class PianoView extends JLayeredPane
     {
         int pitchClass = Math.floorMod(note, 12);
         return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
+    }
+
+
+    /**
+     * Shows a small keyboard-shortcut badge at the bottom of each note's key, replacing
+     * whichever badges were shown before. Called once at startup and again every time the
+     * keyboard octave shifts, so the badges always show what each key currently plays.
+     *
+     * Bottom placement (rather than a top corner) keeps the badge clear of the area where
+     * black keys visually sit on top of white keys, since black keys don't extend all the
+     * way down to the bottom of the white keys beneath them.
+     */
+    public void setKeyboardLabels(Map<Integer, String> noteToKeyLabel)
+    {
+        for (Map.Entry<Integer, JLabel> entry : keyboardLabelsByNote.entrySet())
+        {
+            JButton button = buttonsByNote.get(entry.getKey());
+            if (button != null)
+            {
+                button.remove(entry.getValue());
+                button.revalidate();
+                button.repaint();
+            }
+        }
+        keyboardLabelsByNote.clear();
+
+        for (Map.Entry<Integer, String> entry : noteToKeyLabel.entrySet())
+        {
+            int note = entry.getKey();
+            JButton button = buttonsByNote.get(note);
+            if (button == null)
+            {
+                continue;
+            }
+
+            boolean isBlack = isBlackNote(note);
+            int keyWidth = isBlack ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH;
+            int labelY = isBlack
+                    ? BLACK_KEY_HEIGHT - KEYBOARD_LABEL_HEIGHT - KEYBOARD_LABEL_BOTTOM_MARGIN
+                    : BLACK_KEY_HEIGHT + WHITE_KEY_LABEL_TOP_MARGIN;
+
+            JLabel label = createKeyboardLabel(entry.getValue());
+            button.setLayout(null);
+            button.add(label);
+            label.setBounds(
+                    (keyWidth - KEYBOARD_LABEL_WIDTH) / 2,
+                    labelY,
+                    KEYBOARD_LABEL_WIDTH,
+                    KEYBOARD_LABEL_HEIGHT);
+
+            keyboardLabelsByNote.put(note, label);
+        }
+    }
+
+    private JLabel createKeyboardLabel(String text)
+    {
+        // overridden contains() lets clicks pass through to the button underneath,
+        // so the badge is purely visual and doesn't interfere with playing the key
+        JLabel label = new JLabel(text)
+        {
+            @Override
+            public boolean contains(int x, int y)
+            {
+                return false;
+            }
+        };
+        label.setFont(new Font("Arial", Font.BOLD, 9));
+        label.setForeground(BLACK);
+        label.setOpaque(true);
+        label.setBackground(new Color(255, 255, 255, 220));
+        label.setBorder(BorderFactory.createLineBorder(GRAY, 1));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        return label;
     }
 
 }
