@@ -10,10 +10,7 @@ import retrofit2.http.Url;
 interface BitMidiApi
 {
     @GET("search")
-    Single<ResponseBody> search(@Query("q") String query, @Query("page") int page);
-
-    @GET
-    Single<ResponseBody> page(@Url String url);
+    Single<BitMidiSearchResponse> search(@Query("q") String query, @Query("page") int page);
 
     @Streaming
     @GET
