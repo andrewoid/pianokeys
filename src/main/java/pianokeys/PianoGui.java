@@ -39,7 +39,6 @@ public class PianoGui extends JFrame
         Composition composition = new Composition().fromMidiResource("twinkle-twinkle-little-star.mid");
         CompositionView compositionView = new CompositionView(composition);
         FallingNotesController fallingNotesController = new FallingNotesController(composition);
-        FallingNotesView fallingNotesView = fallingNotesController.getView();
 
         // Because PianoController needs to access PianoView and PianoView needs PianoController
         // this creates a circular dependency. One way to fix this is to create a Supplier that is passed
@@ -55,6 +54,8 @@ public class PianoGui extends JFrame
         keyboardPanel.add(pianoView);
         keyboardPanel.setPreferredSize(new Dimension(1470, 250));
         contentPanel.add(keyboardPanel, BorderLayout.SOUTH);
+
+        FallingNotesView fallingNotesView = fallingNotesController.getView();
         contentPanel.add(fallingNotesView, BorderLayout.CENTER);
 
         // buttons panel
