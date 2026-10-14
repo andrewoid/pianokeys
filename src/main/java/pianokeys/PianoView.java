@@ -41,6 +41,13 @@ public class PianoView extends JLayeredPane
     // which notes currently show a keyboard-shortcut badge, so they can be cleared when the octave shifts
     private final Map<Integer, JLabel> keyboardLabelsByNote = new HashMap<>();
 
+    private static final int KEYBOARD_LABEL_WIDTH = 16;
+    private static final int KEYBOARD_LABEL_HEIGHT = 12;
+    private static final int KEYBOARD_LABEL_BOTTOM_MARGIN = 2;
+    // on white keys, sit just below where the black keys end, rather than at the very
+    // bottom of the (much taller) white key, so the badge stays visible on shorter screens
+    private static final int WHITE_KEY_LABEL_TOP_MARGIN = 4;
+
     public PianoView(Supplier<PianoController> controller)
     {
         this.controller = controller;
@@ -334,12 +341,6 @@ public class PianoView extends JLayeredPane
         return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
     }
 
-    private static final int KEYBOARD_LABEL_WIDTH = 16;
-    private static final int KEYBOARD_LABEL_HEIGHT = 12;
-    private static final int KEYBOARD_LABEL_BOTTOM_MARGIN = 2;
-    // on white keys, sit just below where the black keys end, rather than at the very
-    // bottom of the (much taller) white key, so the badge stays visible on shorter screens
-    private static final int WHITE_KEY_LABEL_TOP_MARGIN = 4;
 
     /**
      * Shows a small keyboard-shortcut badge at the bottom of each note's key, replacing
