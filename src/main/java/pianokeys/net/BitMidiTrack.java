@@ -1,5 +1,4 @@
 package pianokeys.net;
 
-public record BitMidiTrack(String title, String pageUrl, String downloadUrl)
-{
+public record BitMidiTrack(String title, String pageUrl, String downloadUrl) {
 }
