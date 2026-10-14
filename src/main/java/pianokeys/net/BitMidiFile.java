@@ -2,8 +2,7 @@ package pianokeys.net;
 
 public record BitMidiFile(String fileName, byte[] content)
 {
-    public BitMidiFile
-    {
+    public BitMidiFile {
         content = content.clone();
     }
 

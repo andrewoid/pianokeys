@@ -13,13 +13,11 @@ final class BitMidiHtmlParser
     {
         Document document = Jsoup.parse(html, baseUrl);
         List<BitMidiTrack> tracks = new ArrayList<>();
-        for (Element link : document.select("a[href]"))
-        {
+        for (Element link : document.select("a[href]")) {
             String title = link.text().trim();
             String pageUrl = link.absUrl("href");
             // Match the BitMidi link pattern: text ends in .mid and href looks like a MIDI file URL.
-            if (!title.toLowerCase().endsWith(".mid") || !pageUrl.matches(".+/.+-mid(?:[?#].*)?$"))
-            {
+            if (!title.toLowerCase().endsWith(".mid") || !pageUrl.matches(".+/.+-mid(?:[?#].*)?$")) {
                 continue;
             }
 
@@ -29,8 +27,7 @@ final class BitMidiHtmlParser
     }
 
     // Pull the final path segment from the download URL so the saved filename is stable.
-    String fileName(BitMidiTrack track)
-    {
+    String fileName(BitMidiTrack track) {
         String path = java.net.URI.create(track.downloadUrl()).getPath();
         int slash = path.lastIndexOf('/');
         String fileName = slash >= 0 ? path.substring(slash + 1) : path;
@@ -38,8 +35,7 @@ final class BitMidiHtmlParser
     }
 
     // Find the first MIDI download link on the page and return its absolute URL.
-    String downloadUrl(String html, String pageUrl)
-    {
+    String downloadUrl(String html, String pageUrl) {
         Element link = Jsoup.parse(html, pageUrl).selectFirst("a[href$=.mid]");
         return link == null ? "" : link.absUrl("href");
     }

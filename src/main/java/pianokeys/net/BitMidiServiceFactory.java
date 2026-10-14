@@ -13,8 +13,7 @@ public class BitMidiServiceFactory
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     }
 
-    public BitMidiService create()
-    {
+    public BitMidiService create() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(new OkHttpClient.Builder()
