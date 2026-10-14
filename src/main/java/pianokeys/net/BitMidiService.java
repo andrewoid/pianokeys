@@ -10,7 +10,7 @@ public class BitMidiService
     private final BitMidiApi api;
     private final String baseUrl;
 
-    BitMidiService(BitMidiApi api, String baseUrl){
+    BitMidiService(BitMidiApi api, String baseUrl) {
         this.api = api;
         this.baseUrl = baseUrl;
     }
@@ -42,8 +42,7 @@ public class BitMidiService
             downloadUrl = api.page(track.pageUrl())
                     .map(this::readHtml)
                     .map(html -> htmlParser.downloadUrl(html, track.pageUrl()));
-        }
-        else {
+        } else {
             downloadUrl = Single.just(track.downloadUrl());
         }
         return downloadUrl.flatMap(url -> {
@@ -58,8 +57,7 @@ public class BitMidiService
     private List<BitMidiTrack> parseSearchResponse(ResponseBody response, String baseUrl) {
         try (response) {
             return new BitMidiHtmlParser().searchResults(response.string(), baseUrl);
-        }
-        catch (IOException exception) {
+        } catch (IOException exception) {
             throw new IllegalStateException("Unable to read BitMidi search response", exception);
         }
     }
@@ -67,8 +65,7 @@ public class BitMidiService
     private byte[] readBytes(ResponseBody response) {
         try (response) {
             return response.bytes();
-        }
-        catch (IOException exception) {
+        } catch (IOException exception) {
             throw new IllegalStateException("Unable to read BitMidi download", exception);
         }
     }
@@ -76,8 +73,7 @@ public class BitMidiService
     private String readHtml(ResponseBody response) {
         try (response) {
             return response.string();
-        }
-        catch (IOException exception) {
+        } catch (IOException exception) {
             throw new IllegalStateException("Unable to read BitMidi page", exception);
         }
     }
