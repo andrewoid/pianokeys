@@ -26,6 +26,9 @@ public class PianoGui extends JFrame
 
     private PianoController controller;
 
+    // window for searching BitMidi, created the first time it is opened
+    private BitMidiSearchGui bitMidiSearchGui;
+
     public PianoGui()
     {
         initMidi();
@@ -116,6 +119,11 @@ public class PianoGui extends JFrame
         // adding it to the button panel
         buttonPanel.add(instrumentDropdown);
 
+        // opens a window to search BitMidi for songs
+        JButton bitMidiSearch = new JButton("Search BitMidi");
+        bitMidiSearch.addActionListener(e -> openBitMidiSearch());
+        buttonPanel.add(bitMidiSearch);
+
         add(buttonPanel, BorderLayout.NORTH);
 
         centerOnOctave(pianoScrollPane, pianoView, HOME_OCTAVE_INDEX);
@@ -184,6 +192,17 @@ public class PianoGui extends JFrame
 
             scrollPane.getHorizontalScrollBar().setValue(targetX);
         });
+    }
+
+    private void openBitMidiSearch()
+    {
+        if (bitMidiSearchGui == null)
+        {
+            bitMidiSearchGui = new BitMidiSearchGui();
+            bitMidiSearchGui.setLocationRelativeTo(this);
+        }
+        bitMidiSearchGui.setVisible(true);
+        bitMidiSearchGui.toFront();
     }
 
 }
