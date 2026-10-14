@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 import static pianokeys.PianoSound.C4;
@@ -79,6 +80,7 @@ public class KeyboardInputHandler
 
     // PianoView renders 7 octaves, with the home octave (this class's un-shifted
     // mapping) at index 3 - so the shift is only valid from -3 to +3.
+    private static final int HOME_OCTAVE_INDEX = 3;
     private static final int MIN_OCTAVE_SHIFT = -3;
     private static final int MAX_OCTAVE_SHIFT = 3;
 
@@ -86,13 +88,15 @@ public class KeyboardInputHandler
     private final Set<Integer> heldControlKeys = new HashSet<>();
     private final Supplier<PianoController> controller;
     private final PianoView pianoView;
+    private final IntConsumer onOctaveChanged;
 
     private int octaveShift = 0;
 
-    public KeyboardInputHandler(Supplier<PianoController> controller, PianoView pianoView)
+    public KeyboardInputHandler(Supplier<PianoController> controller, PianoView pianoView, IntConsumer onOctaveChanged)
     {
         this.controller = controller;
         this.pianoView = pianoView;
+        this.onOctaveChanged = onOctaveChanged;
     }
 
     /**
@@ -185,6 +189,7 @@ public class KeyboardInputHandler
                     {
                         octaveShift = shifted;
                         updateKeyboardLabels();
+                        onOctaveChanged.accept(HOME_OCTAVE_INDEX + octaveShift);
                     }
                 }
             }

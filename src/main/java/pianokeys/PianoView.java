@@ -124,6 +124,19 @@ public class PianoView extends JLayeredPane
         return blackKeysPanel;
     }
 
+    /**
+     * @return the pixel X position where the given octave's first (leftmost) white key starts
+     */
+    public int getOctaveStartX(int octaveIndex)
+    {
+        return octaveIndex * WHITE_KEY_NAMES.length * WHITE_KEY_WIDTH;
+    }
+
+    public int getWhiteKeyWidth()
+    {
+        return WHITE_KEY_WIDTH;
+    }
+
     private int getWhiteNoteForOctave(int octave, int whiteIndex)
     {
         return PianoSound.whiteNotes[whiteIndex] + (octave - 3) * 12;
@@ -321,10 +334,21 @@ public class PianoView extends JLayeredPane
         return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
     }
 
+    private static final int KEYBOARD_LABEL_WIDTH = 16;
+    private static final int KEYBOARD_LABEL_HEIGHT = 12;
+    private static final int KEYBOARD_LABEL_BOTTOM_MARGIN = 2;
+    // on white keys, sit just below where the black keys end, rather than at the very
+    // bottom of the (much taller) white key, so the badge stays visible on shorter screens
+    private static final int WHITE_KEY_LABEL_TOP_MARGIN = 4;
+
     /**
-     * Shows a small keyboard-shortcut badge in the corner of each note's key, replacing
+     * Shows a small keyboard-shortcut badge at the bottom of each note's key, replacing
      * whichever badges were shown before. Called once at startup and again every time the
      * keyboard octave shifts, so the badges always show what each key currently plays.
+     *
+     * Bottom placement (rather than a top corner) keeps the badge clear of the area where
+     * black keys visually sit on top of white keys, since black keys don't extend all the
+     * way down to the bottom of the white keys beneath them.
      */
     public void setKeyboardLabels(Map<Integer, String> noteToKeyLabel)
     {
@@ -349,10 +373,20 @@ public class PianoView extends JLayeredPane
                 continue;
             }
 
+            boolean isBlack = isBlackNote(note);
+            int keyWidth = isBlack ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH;
+            int labelY = isBlack
+                    ? BLACK_KEY_HEIGHT - KEYBOARD_LABEL_HEIGHT - KEYBOARD_LABEL_BOTTOM_MARGIN
+                    : BLACK_KEY_HEIGHT + WHITE_KEY_LABEL_TOP_MARGIN;
+
             JLabel label = createKeyboardLabel(entry.getValue());
             button.setLayout(null);
             button.add(label);
-            label.setBounds(2, 2, 16, 12);
+            label.setBounds(
+                    (keyWidth - KEYBOARD_LABEL_WIDTH) / 2,
+                    labelY,
+                    KEYBOARD_LABEL_WIDTH,
+                    KEYBOARD_LABEL_HEIGHT);
 
             keyboardLabelsByNote.put(note, label);
         }
