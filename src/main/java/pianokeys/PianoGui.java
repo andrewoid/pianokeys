@@ -10,17 +10,20 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.function.Supplier;
 
-import static java.awt.Color.*;
-
 public class PianoGui extends JFrame
 {
+    private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
+
+    // White keys
+    private final int whiteKeyWidth = 50;
+    private final int whiteKeyHeight = 250;
+
+    private final int octaves = 7;
 
     // index of the keyboard-shortcut home octave, matching KeyboardInputHandler's un-shifted mapping
     private static final int HOME_OCTAVE_INDEX = 3;
 
     //dropdown to change instrument
-    private final JComboBox<String> instrumentDropdown;
-
     // MIDI sound system
     private PianoSound sound;
 
@@ -34,27 +37,29 @@ public class PianoGui extends JFrame
         initMidi();
         midiCleanup();
         setUpFrame();
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        setContentPane(contentPanel);
 
-        Composition composition = new Composition();
+        Composition composition = new Composition().fromMidiResource("twinkle-twinkle-little-star.mid");
         CompositionView compositionView = new CompositionView(composition);
-        compositionView.setPreferredSize(new Dimension(2000, 400));
+        FallingNotesController fallingNotesController = new FallingNotesController(composition);
 
         // Because PianoController needs to access PianoView and PianoView needs PianoController
         // this creates a circular dependency. One way to fix this is to create a Supplier that is passed
         // to PianoView which will return the PianoController after it's created after PianoView is instantiated.
         Supplier<PianoController> controllerSupplier = () -> controller;
 
-        PianoView pianoView = new PianoView(controllerSupplier);
+        PianoView pianoView = new PianoView(controllerSupplier, sound);
         JScrollPane pianoScrollPane = createScrollPane(pianoView);
-
         // Adding the controller object
         controller = new PianoController(compositionView, sound, composition, pianoView);
+        controller.setFallingNotesController(fallingNotesController);
 
-        new KeyboardInputHandler(controllerSupplier, pianoView,
+        new KeyboardInputHandler(controllerSupplier, pianoView, sound,
                 octaveIndex -> centerOnOctave(pianoScrollPane, pianoView, octaveIndex))
                 .registerOn(getRootPane());
 
-        add(pianoScrollPane, BorderLayout.SOUTH);
+        contentPanel.add(pianoScrollPane, BorderLayout.SOUTH);
         // vertical and  horizontal scroll panes for CompositionView
         JScrollPane compositionScrollPane = new JScrollPane(
                 compositionView,
@@ -63,28 +68,11 @@ public class PianoGui extends JFrame
         );
         compositionScrollPane.setPreferredSize(new Dimension(800, 200));
 
-        add(compositionScrollPane);
+        FallingNotesView fallingNotesView = fallingNotesController.getView();
+        contentPanel.add(fallingNotesView, BorderLayout.CENTER);
 
         // buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton erase = new JButton(new ImageIcon(getClass().getResource("/images/erase.png")));
-        JButton restart = new JButton(new ImageIcon(getClass().getResource("/images/restart.png")));
-        JButton record = new JButton(new ImageIcon(getClass().getResource("/images/record.png")));
         JButton play = new JButton(new ImageIcon(getClass().getResource("/images/play.png")));
-
-        // erase button - calling controller
-        erase.addActionListener(e ->
-        {
-            controller.eraseComposition();
-        });
-
-        // restart button
-        restart.addActionListener(e ->
-        {
-            controller.restartComposition();
-        });
-
-
         play.addActionListener(e ->
         {
             if (controller.playComposition())
@@ -97,35 +85,34 @@ public class PianoGui extends JFrame
             }
         });
 
-        buttonPanel.add(erase);
-        buttonPanel.add(restart);
-        buttonPanel.add(record);
-        buttonPanel.add(play);
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JLabel songTitle = new JLabel("Twinkle Twinkle Little Star", SwingConstants.CENTER);
+        songTitle.setFont(new Font("Arial", Font.BOLD, 24));
+        topPanel.add(songTitle, BorderLayout.NORTH);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel playPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        playPanel.add(play);
+        buttonPanel.add(playPanel);
 
-        // Making the instrument dropdown look like a button
-        instrumentDropdown = new JComboBox<>(PianoSound.instruments);
+        JComboBox<String> instrumentDropdown = new JComboBox<>(sound.instruments);
         instrumentDropdown.setFont(new Font("Arial", Font.BOLD, 16));
-        instrumentDropdown.setBackground(WHITE);
-        instrumentDropdown.setForeground(BLACK);
-        instrumentDropdown.setBorder(BorderFactory.createLineBorder(GRAY, 2));
-
-        // Link the combo box to instrument change
+        instrumentDropdown.setBackground(Color.WHITE);
+        instrumentDropdown.setForeground(Color.BLACK);
+        instrumentDropdown.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
         instrumentDropdown.addActionListener(e ->
-        {
-            String instrument = (String) instrumentDropdown.getSelectedItem();
-            controller.changeInstrument(instrument);
-        });
-
-        // adding it to the button panel
+                controller.changeInstrument((String) instrumentDropdown.getSelectedItem()));
         buttonPanel.add(instrumentDropdown);
 
-        // opens a window to search BitMidi for songs
         JButton bitMidiSearch = new JButton("Search BitMidi");
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
 
-        add(buttonPanel, BorderLayout.NORTH);
-
+        topPanel.add(buttonPanel, BorderLayout.SOUTH);
+        contentPanel.add(topPanel, BorderLayout.NORTH);
+        fallingNotesController.setFinishedListener(() ->
+                play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
+        contentPanel.revalidate();
+        contentPanel.repaint();
         centerOnOctave(pianoScrollPane, pianoView, HOME_OCTAVE_INDEX);
 
     }
@@ -145,8 +132,8 @@ public class PianoGui extends JFrame
         {
             Synthesizer synthesizer = MidiSystem.getSynthesizer();
             synthesizer.open();
-            MidiChannel channel = synthesizer.getChannels()[0];
-            sound = new PianoSound(synthesizer, channel);
+            MidiChannel[] channels = synthesizer.getChannels();
+            sound = new PianoSound(synthesizer, channels[0], channels[1]);
         } catch (MidiUnavailableException e)
         {
             e.printStackTrace();
@@ -167,6 +154,7 @@ public class PianoGui extends JFrame
             }
         });
     }
+
 
     private JScrollPane createScrollPane(JLayeredPane layeredPane)
     {
@@ -204,5 +192,4 @@ public class PianoGui extends JFrame
         bitMidiSearchGui.setVisible(true);
         bitMidiSearchGui.toFront();
     }
-
 }

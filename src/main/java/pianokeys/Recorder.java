@@ -7,6 +7,7 @@ public class Recorder
     private double compositionTimeSeconds;
     private double startTimeMs;
     private int note;
+    private final Note timeHelper = new Note(0, 0, 0);
 
     public Recorder(Composition composition)
     {
@@ -22,10 +23,11 @@ public class Recorder
     public void stopNote()
     {
         double endTimeMs = System.currentTimeMillis();
-        double deltaTimeSeconds = Note.roundToNearestEighth((endTimeMs - startTimeMs) / 1000.0);
+        double deltaTimeSeconds = timeHelper.roundToNearestEighth(
+                (endTimeMs - startTimeMs) / 1000.0);
         if (deltaTimeSeconds == 0)
         {
-            deltaTimeSeconds = Note.TIME_STEP;
+            deltaTimeSeconds = 1 / 8.0;
         }
         composition.addNote(new Note(note,
                 compositionTimeSeconds,

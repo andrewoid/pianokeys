@@ -1,17 +1,16 @@
 package pianokeys;
 
-import static pianokeys.Note.TIME_STEP;
-
 public class CompositionRunnable implements Runnable
 {
     private final double sleepMs;
+    private final double timeStep = 1 / 8.0;
     private final PianoController controller;
     private final Composition composition;
     private boolean playing = true;
 
     public CompositionRunnable(PianoController controller, Composition composition)
     {
-        this(controller, composition, TIME_STEP);
+        this(controller, composition, 1 / 8.0);
     }
 
     public CompositionRunnable(PianoController controller, Composition composition, double sleepMs)
@@ -66,7 +65,7 @@ public class CompositionRunnable implements Runnable
                 e.printStackTrace();
             }
 
-            time += TIME_STEP;
+            time += timeStep;
         }
 
         for (Note note : composition.getNoteList())

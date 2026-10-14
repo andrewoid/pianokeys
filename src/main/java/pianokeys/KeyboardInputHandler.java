@@ -10,8 +10,6 @@ import java.util.Set;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
-import static pianokeys.PianoSound.C4;
-
 /**
  * Lets the computer keyboard play notes, using the standard "musical typing"
  * layout (as used by GarageBand, Ableton, etc.):
@@ -29,30 +27,9 @@ import static pianokeys.PianoSound.C4;
  */
 public class KeyboardInputHandler
 {
-    private static final Map<Integer, Integer> KEY_TO_NOTE = Map.ofEntries(
-            // white keys
-            Map.entry(KeyEvent.VK_A, C4),
-            Map.entry(KeyEvent.VK_S, C4 + 2),
-            Map.entry(KeyEvent.VK_D, C4 + 4),
-            Map.entry(KeyEvent.VK_F, C4 + 5),
-            Map.entry(KeyEvent.VK_G, C4 + 7),
-            Map.entry(KeyEvent.VK_H, C4 + 9),
-            Map.entry(KeyEvent.VK_J, C4 + 11),
-            Map.entry(KeyEvent.VK_K, C4 + 12),
-            Map.entry(KeyEvent.VK_L, C4 + 14),
-            Map.entry(KeyEvent.VK_SEMICOLON, C4 + 16),
+    private final Map<Integer, Integer> keyToNote;
 
-            // black keys
-            Map.entry(KeyEvent.VK_W, C4 + 1),
-            Map.entry(KeyEvent.VK_E, C4 + 3),
-            Map.entry(KeyEvent.VK_T, C4 + 6),
-            Map.entry(KeyEvent.VK_Y, C4 + 8),
-            Map.entry(KeyEvent.VK_U, C4 + 10),
-            Map.entry(KeyEvent.VK_O, C4 + 13),
-            Map.entry(KeyEvent.VK_P, C4 + 15)
-    );
-
-    private static final Map<Integer, String> KEY_TO_LABEL = Map.ofEntries(
+    private final Map<Integer, String> keyToLabel = Map.ofEntries(
             Map.entry(KeyEvent.VK_A, "A"),
             Map.entry(KeyEvent.VK_S, "S"),
             Map.entry(KeyEvent.VK_D, "D"),
@@ -74,9 +51,9 @@ public class KeyboardInputHandler
 
     // PianoView renders 7 octaves, with the home octave (this class's un-shifted
     // mapping) at index 3 - so the shift is only valid from -3 to +3.
-    private static final int HOME_OCTAVE_INDEX = 3;
-    private static final int MIN_OCTAVE_SHIFT = -3;
-    private static final int MAX_OCTAVE_SHIFT = 3;
+    private final int homeOctaveIndex = 3;
+    private final int minOctaveShift = -3;
+    private final int maxOctaveShift = 3;
 
     private final Map<Integer, Integer> heldNotes = new HashMap<>();
     private final Set<Integer> heldControlKeys = new HashSet<>();
@@ -86,10 +63,31 @@ public class KeyboardInputHandler
 
     private int octaveShift = 0;
 
-    public KeyboardInputHandler(Supplier<PianoController> controller, PianoView pianoView, IntConsumer onOctaveChanged)
+    public KeyboardInputHandler(Supplier<PianoController> controller, PianoView pianoView,
+                                PianoSound sound, IntConsumer onOctaveChanged)
     {
         this.controller = controller;
         this.pianoView = pianoView;
+        int c4 = sound.c4;
+        keyToNote = Map.ofEntries(
+                Map.entry(KeyEvent.VK_A, c4),
+                Map.entry(KeyEvent.VK_S, c4 + 2),
+                Map.entry(KeyEvent.VK_D, c4 + 4),
+                Map.entry(KeyEvent.VK_F, c4 + 5),
+                Map.entry(KeyEvent.VK_G, c4 + 7),
+                Map.entry(KeyEvent.VK_H, c4 + 9),
+                Map.entry(KeyEvent.VK_J, c4 + 11),
+                Map.entry(KeyEvent.VK_K, c4 + 12),
+                Map.entry(KeyEvent.VK_L, c4 + 14),
+                Map.entry(KeyEvent.VK_SEMICOLON, c4 + 16),
+                Map.entry(KeyEvent.VK_W, c4 + 1),
+                Map.entry(KeyEvent.VK_E, c4 + 3),
+                Map.entry(KeyEvent.VK_T, c4 + 6),
+                Map.entry(KeyEvent.VK_Y, c4 + 8),
+                Map.entry(KeyEvent.VK_U, c4 + 10),
+                Map.entry(KeyEvent.VK_O, c4 + 13),
+                Map.entry(KeyEvent.VK_P, c4 + 15)
+        );
         this.onOctaveChanged = onOctaveChanged;
     }
 
@@ -102,7 +100,7 @@ public class KeyboardInputHandler
         InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = rootPane.getActionMap();
 
-        for (Map.Entry<Integer, Integer> entry : KEY_TO_NOTE.entrySet())
+        for (Map.Entry<Integer, Integer> entry : keyToNote.entrySet())
         {
             int keyCode = entry.getKey();
             int baseNote = entry.getValue();
@@ -154,11 +152,11 @@ public class KeyboardInputHandler
     private void updateKeyboardLabels()
     {
         Map<Integer, String> noteToLabel = new HashMap<>();
-        for (Map.Entry<Integer, Integer> entry : KEY_TO_NOTE.entrySet())
+        for (Map.Entry<Integer, Integer> entry : keyToNote.entrySet())
         {
             int keyCode = entry.getKey();
             int note = entry.getValue() + octaveShift * 12;
-            noteToLabel.put(note, KEY_TO_LABEL.get(keyCode));
+            noteToLabel.put(note, keyToLabel.get(keyCode));
         }
         pianoView.setKeyboardLabels(noteToLabel);
     }
@@ -179,11 +177,11 @@ public class KeyboardInputHandler
                 if (heldControlKeys.add(keyCode))
                 {
                     int shifted = octaveShift + direction;
-                    if (shifted >= MIN_OCTAVE_SHIFT && shifted <= MAX_OCTAVE_SHIFT)
+                    if (shifted >= minOctaveShift && shifted <= maxOctaveShift)
                     {
                         octaveShift = shifted;
                         updateKeyboardLabels();
-                        onOctaveChanged.accept(HOME_OCTAVE_INDEX + octaveShift);
+                        onOctaveChanged.accept(homeOctaveIndex + octaveShift);
                     }
                 }
             }

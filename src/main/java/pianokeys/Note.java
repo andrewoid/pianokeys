@@ -33,7 +33,7 @@ public record Note(int key, double startTime, double endTime, int instrument)
 
     public String getName()
     {
-        int octave = (key / 12) - 1;
+        int octave = (key / 12) - 1;  // MIDI note number to octave
         int noteIndex = key % 12;
         return NOTE_NAMES[noteIndex] + octave;
     }
