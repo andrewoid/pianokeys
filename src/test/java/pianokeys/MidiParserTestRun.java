@@ -1,12 +1,15 @@
-
 package pianokeys;
 
+import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class MidiParserTestRun {
 
-    public static void main(String[] args) throws Exception {
+    @Test
+    public void testOdeToJoy() throws Exception {
 
         MidiParser parser = new MidiParser();
 
@@ -14,21 +17,16 @@ public class MidiParserTestRun {
                 new File("midi/beethoven-symphony9-4-ode-to-joy-piano-solo.mid")
         );
 
-        System.out.println("Total notes: " + notes.size());
+        // Check that all 264 notes were parsed
+        assertEquals(264, notes.size());
 
-        System.out.println("\nFirst 5 notes:");
+        // Check the first note
+        Note firstNote = notes.get(0);
 
-        for (int i = 0; i < Math.min(5, notes.size()); i++) {
-
-            Note note = notes.get(i);
-
-            System.out.println(
-                    "Pitch: " + note.key()
-                            + " | Start: " + note.startTime()
-                            + " | Duration: "
-                            + (note.endTime() - note.startTime())
-                            + " | Instrument: " + note.instrument()
-            );
-        }
+        assertEquals(62, firstNote.key());
+        assertEquals(0.0, firstNote.startTime(), 0.001);
+        assertEquals(0.483869,
+                firstNote.endTime() - firstNote.startTime(), 0.001);
+        assertEquals(0, firstNote.instrument());
     }
 }
