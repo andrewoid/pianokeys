@@ -7,6 +7,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.function.Supplier;
+import javax.swing.border.Border;
 
 import static java.awt.Color.*;
 import static pianokeys.PianoSound.C4;
@@ -32,11 +33,14 @@ public class PianoView extends JLayeredPane
 
     private static final Color C_BASE_COLOR = new Color(255, 245, 200);
     private static final Color C_HOVER_COLOR = new Color(255, 235, 180);
+    private static final Font KEY_FONT = new Font("Arial", Font.BOLD, 16);
+    private static final Border WHITE_KEY_BORDER = BorderFactory.createLineBorder(BLACK, 2);
+    private static final Border MIDDLE_C_BORDER = BorderFactory.createLineBorder(RED, 3);
+    private static final Border BLACK_KEY_BORDER = BorderFactory.createLineBorder(GRAY, 1);
 
     private final Supplier<PianoController> controller;
 
-    private final HashMap<Integer, JButton> blackHashMap = new HashMap<>();
-    private final HashMap<Integer, JButton> whiteHashMap = new HashMap<>();
+    private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
 
     public PianoView(Supplier<PianoController> controller)
     {
@@ -74,7 +78,7 @@ public class PianoView extends JLayeredPane
                 // calculating position across all the indexes not just the first loop
                 int keyIndex = octave * WHITE_KEY_NAMES.length + i;
                 whiteButtons[keyIndex] = button;
-                whiteHashMap.put(note, button);
+                buttonsByNote.put(note, button);
 
                 button.setBounds(keyIndex * WHITE_KEY_WIDTH, 0, WHITE_KEY_WIDTH, WHITE_KEY_HEIGHT);
                 whiteKeysPanel.add(button);
@@ -112,7 +116,7 @@ public class PianoView extends JLayeredPane
                     button.setBounds(blackKeyX, 0, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT);
                     blackKeysPanel.add(button);
 
-                    blackHashMap.put(note, button);
+                    buttonsByNote.put(note, button);
 
                     blackKeyIndex++;
                 }
@@ -143,9 +147,9 @@ public class PianoView extends JLayeredPane
 
         // make it look like a piano key
         key.setForeground(BLACK);
-        key.setFont(new Font("Arial", Font.BOLD, 16));
+        key.setFont(KEY_FONT);
         key.setFocusPainted(false);
-        key.setBorder(BorderFactory.createLineBorder(BLACK, 2));
+        key.setBorder(WHITE_KEY_BORDER);
         key.setOpaque(true);
         key.setContentAreaFilled(true);
 
@@ -156,7 +160,7 @@ public class PianoView extends JLayeredPane
         {
             baseColor = C_BASE_COLOR;
             hoverColor = C_HOVER_COLOR;
-            key.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+            key.setBorder(MIDDLE_C_BORDER);
             key.setToolTipText("Middle C (C4)");
         } else
         {
@@ -226,9 +230,9 @@ public class PianoView extends JLayeredPane
         JButton key = new JButton(blackKeyName);
         key.setBackground(BLACK);
         key.setForeground(WHITE);
-        key.setFont(new Font("Arial", Font.BOLD, 16));
+        key.setFont(KEY_FONT);
         key.setFocusPainted(false);
-        key.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        key.setBorder(BLACK_KEY_BORDER);
         key.setOpaque(true);
         key.setContentAreaFilled(true);
 
@@ -289,16 +293,14 @@ public class PianoView extends JLayeredPane
 
     public void showKeyPlayed(int note, boolean pressed)
     {
-        JButton button;
+        JButton button = buttonsByNote.get(note);
         Color releasedColor;
-        if (whiteHashMap.containsKey(note))
+        if (isBlackNote(note))
         {
-            button = whiteHashMap.get(note);
-            releasedColor = (note == C4) ? C_BASE_COLOR : WHITE;
+            releasedColor = BLACK;
         } else
         {
-            button = blackHashMap.get(note);
-            releasedColor = BLACK;
+            releasedColor = (note == C4) ? C_BASE_COLOR : WHITE;
         }
 
         if (pressed)
@@ -308,6 +310,16 @@ public class PianoView extends JLayeredPane
         {
             button.setBackground(releasedColor);
         }
+    }
+
+    /**
+     * MIDI notes repeat every 12 semitones. Remainder 1, 3, 6, 8, and 10 are the black keys
+     * (C#, D#, F#, G#, A#); the rest are white keys.
+     */
+    private boolean isBlackNote(int note)
+    {
+        int pitchClass = Math.floorMod(note, 12);
+        return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
     }
 
 }
