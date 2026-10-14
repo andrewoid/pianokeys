@@ -6,6 +6,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.swing.border.Border;
 
@@ -41,6 +42,16 @@ public class PianoView extends JLayeredPane
     private final Supplier<PianoController> controller;
 
     private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
+
+    // which notes currently show a keyboard-shortcut badge, so they can be cleared when the octave shifts
+    private final Map<Integer, JLabel> keyboardLabelsByNote = new HashMap<>();
+
+    private static final int KEYBOARD_LABEL_WIDTH = 16;
+    private static final int KEYBOARD_LABEL_HEIGHT = 12;
+    private static final int KEYBOARD_LABEL_BOTTOM_MARGIN = 2;
+    // on white keys, sit just below where the black keys end, rather than at the very
+    // bottom of the (much taller) white key, so the badge stays visible on shorter screens
+    private static final int WHITE_KEY_LABEL_TOP_MARGIN = 4;
 
     public PianoView(Supplier<PianoController> controller)
     {
@@ -123,6 +134,19 @@ public class PianoView extends JLayeredPane
             }
         }
         return blackKeysPanel;
+    }
+
+    /**
+     * @return the pixel X position where the given octave's first (leftmost) white key starts
+     */
+    public int getOctaveStartX(int octaveIndex)
+    {
+        return octaveIndex * WHITE_KEY_NAMES.length * WHITE_KEY_WIDTH;
+    }
+
+    public int getWhiteKeyWidth()
+    {
+        return WHITE_KEY_WIDTH;
     }
 
     private int getWhiteNoteForOctave(int octave, int whiteIndex)
@@ -320,6 +344,79 @@ public class PianoView extends JLayeredPane
     {
         int pitchClass = Math.floorMod(note, 12);
         return pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10;
+    }
+
+
+    /**
+     * Shows a small keyboard-shortcut badge at the bottom of each note's key, replacing
+     * whichever badges were shown before. Called once at startup and again every time the
+     * keyboard octave shifts, so the badges always show what each key currently plays.
+     *
+     * Bottom placement (rather than a top corner) keeps the badge clear of the area where
+     * black keys visually sit on top of white keys, since black keys don't extend all the
+     * way down to the bottom of the white keys beneath them.
+     */
+    public void setKeyboardLabels(Map<Integer, String> noteToKeyLabel)
+    {
+        for (Map.Entry<Integer, JLabel> entry : keyboardLabelsByNote.entrySet())
+        {
+            JButton button = buttonsByNote.get(entry.getKey());
+            if (button != null)
+            {
+                button.remove(entry.getValue());
+                button.revalidate();
+                button.repaint();
+            }
+        }
+        keyboardLabelsByNote.clear();
+
+        for (Map.Entry<Integer, String> entry : noteToKeyLabel.entrySet())
+        {
+            int note = entry.getKey();
+            JButton button = buttonsByNote.get(note);
+            if (button == null)
+            {
+                continue;
+            }
+
+            boolean isBlack = isBlackNote(note);
+            int keyWidth = isBlack ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH;
+            int labelY = isBlack
+                    ? BLACK_KEY_HEIGHT - KEYBOARD_LABEL_HEIGHT - KEYBOARD_LABEL_BOTTOM_MARGIN
+                    : BLACK_KEY_HEIGHT + WHITE_KEY_LABEL_TOP_MARGIN;
+
+            JLabel label = createKeyboardLabel(entry.getValue());
+            button.setLayout(null);
+            button.add(label);
+            label.setBounds(
+                    (keyWidth - KEYBOARD_LABEL_WIDTH) / 2,
+                    labelY,
+                    KEYBOARD_LABEL_WIDTH,
+                    KEYBOARD_LABEL_HEIGHT);
+
+            keyboardLabelsByNote.put(note, label);
+        }
+    }
+
+    private JLabel createKeyboardLabel(String text)
+    {
+        // overridden contains() lets clicks pass through to the button underneath,
+        // so the badge is purely visual and doesn't interfere with playing the key
+        JLabel label = new JLabel(text)
+        {
+            @Override
+            public boolean contains(int x, int y)
+            {
+                return false;
+            }
+        };
+        label.setFont(new Font("Arial", Font.BOLD, 9));
+        label.setForeground(BLACK);
+        label.setOpaque(true);
+        label.setBackground(new Color(255, 255, 255, 220));
+        label.setBorder(BorderFactory.createLineBorder(GRAY, 1));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        return label;
     }
 
 }
