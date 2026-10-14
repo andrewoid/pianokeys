@@ -10,19 +10,17 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.function.Supplier;
 
-import static java.awt.Color.*;
-
 public class PianoGui extends JFrame
 {
 
     // declared everything
-    private static final String[] WHITE_KEY_NAMES = {"C", "D", "E", "F", "G", "A", "B"};
+    private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
 
     // White keys
-    private static final int WHITE_KEY_WIDTH = 50;
-    private static final int WHITE_KEY_HEIGHT = 250;
+    private final int whiteKeyWidth = 50;
+    private final int whiteKeyHeight = 250;
 
-    private static final int OCTAVES = 7;
+    private final int octaves = 7;
 
     //dropdown to change instrument
     // MIDI sound system
@@ -38,19 +36,20 @@ public class PianoGui extends JFrame
         JPanel contentPanel = new JPanel(new BorderLayout());
         setContentPane(contentPanel);
 
-        Composition composition = Composition.fromMidiResource("twinkle-twinkle-little-star.mid");
+        Composition composition = new Composition().fromMidiResource("twinkle-twinkle-little-star.mid");
         CompositionView compositionView = new CompositionView(composition);
-        FallingNotesView fallingNotesView = new FallingNotesView(composition);
+        FallingNotesController fallingNotesController = new FallingNotesController(composition);
+        FallingNotesView fallingNotesView = fallingNotesController.getView();
 
         // Because PianoController needs to access PianoView and PianoView needs PianoController
         // this creates a circular dependency. One way to fix this is to create a Supplier that is passed
         // to PianoView which will return the PianoController after it's created after PianoView is instantiated.
         Supplier<PianoController> controllerSupplier = () -> controller;
 
-        PianoView pianoView = new PianoView(controllerSupplier);
+        PianoView pianoView = new PianoView(controllerSupplier, sound);
         // Adding the controller object
         controller = new PianoController(compositionView, sound, composition, pianoView);
-        controller.setFallingNotesView(fallingNotesView);
+        controller.setFallingNotesController(fallingNotesController);
 
         JPanel keyboardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         keyboardPanel.add(pianoView);
@@ -80,7 +79,7 @@ public class PianoGui extends JFrame
         playPanel.add(play);
         topPanel.add(playPanel, BorderLayout.SOUTH);
         contentPanel.add(topPanel, BorderLayout.NORTH);
-        fallingNotesView.setFinishedListener(() ->
+        fallingNotesController.setFinishedListener(() ->
                 play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
         contentPanel.revalidate();
         contentPanel.repaint();

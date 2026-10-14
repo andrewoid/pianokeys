@@ -4,36 +4,32 @@ import javax.sound.midi.*;
 public class PianoSound
 {
     // MIDI note constants
-    public static final int C4 = 60;
-    public static final int D4 = 62;
-    public static final int E4 = 64;
-    public static final int F4 = 65;
-    public static final int G4 = 67;
-    public static final int A4 = 69;
-    public static final int B4 = 71;
-    public static final int C5 = 72;
+    public final int c4 = 60;
+    public final int d4 = 62;
+    public final int e4 = 64;
+    public final int f4 = 65;
+    public final int g4 = 67;
+    public final int a4 = 69;
+    public final int b4 = 71;
+    public final int c5 = 72;
+    public final int d5 = 74;
+    public final int d5Sharp = 75;
+    public final int e5 = 76;
 
-
-    public static final int D5 = 74;
-    public static final int D5_SHARP = 75;
-    public static final int E5 = 76;
-
-
-    // Black key (sharp) note constants
-    public static final int C4_SHARP = 61;
-    public static final int D4_SHARP = 63;
-    public static final int F4_SHARP = 66;
-    public static final int G4_SHARP = 68;
-    public static final int A4_SHARP = 70;
+    // Black-key (sharp) note values.
+    public final int c4Sharp = 61;
+    public final int d4Sharp = 63;
+    public final int f4Sharp = 66;
+    public final int g4Sharp = 68;
+    public final int a4Sharp = 70;
 
     private final Synthesizer synthesizer;
     private final MidiChannel channel;
     private final MidiChannel songChannel;
 
-    public static final int[] whiteNotes = {C4, D4, E4, F4, G4, A4, B4, C5};
-    public static final int[] blackNotes = {C4_SHARP, D4_SHARP, -1, F4_SHARP, G4_SHARP, A4_SHARP, -1};
-
-    public static final String[] instruments = {"piano", "guitar", "violin", "trumpet"};
+    public final int[] whiteNotes = {c4, d4, e4, f4, g4, a4, b4, c5};
+    public final int[] blackNotes = {c4Sharp, d4Sharp, -1, f4Sharp, g4Sharp, a4Sharp, -1};
+    public final String[] instruments = {"piano", "guitar", "violin", "trumpet"};
 
     public PianoSound(Synthesizer synthesizer, MidiChannel channel) throws MidiUnavailableException
     {

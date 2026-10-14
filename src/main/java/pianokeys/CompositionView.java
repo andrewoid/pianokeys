@@ -9,8 +9,6 @@ import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
 
-import static java.awt.Color.*;
-
 /**
  * This displays the notes visually as rectangles.
  * The position on the x-axis is time.
@@ -22,22 +20,22 @@ public class CompositionView extends JComponent
      * Width of one second when displaying notes in the View.
      * Increased so that you can see the 8th subdivisions clearly
      */
-    private static final int SECOND_WIDTH = 80;
+    private final int secondWidth = 80;
 
     /**
      * Height of each note. This might need to be a percentage of the height of the View.
      */
-    private static final int NOTE_HEIGHT = 10;
+    private final int noteHeight = 10;
 
     /**
      * Width of the current time vertical line
      */
-    private static final int CURRENT_TIME_WIDTH = 2;
+    private final int currentTimeWidth = 2;
 
     /**
      * Number of subdivisions per second (8 creates 8th note grid lines).
      */
-    private static final int SUBDIVISIONS = 8;
+    private final int subdivisions = 8;
 
     /**
      * Number of notes to display vertically
@@ -49,8 +47,9 @@ public class CompositionView extends JComponent
     private double currentTime = 0;
     private final Composition composition;
 
-    private static final int DEFAULT_HEIGHT = 400;
-    private static final int MIN_SECONDS = 4;
+    private final int defaultHeight = 400;
+    private final int minSeconds = 4;
+    private final double timeStep = 1 / 8.0;
 
     public CompositionView(Composition composition)
     {
@@ -90,10 +89,10 @@ public class CompositionView extends JComponent
                 switch (e.getKeyCode())
                 {
                     case KeyEvent.VK_LEFT:
-                        addTime(-Note.TIME_STEP); //move back 1/8th second
+                        addTime(-timeStep); //move back 1/8th second
                         break;
                     case KeyEvent.VK_RIGHT:
-                        addTime(Note.TIME_STEP); //move forward 1/8 second
+                        addTime(timeStep); //move forward 1/8 second
                         break;
                     default:
                         break;
@@ -106,8 +105,8 @@ public class CompositionView extends JComponent
 
     public void fitToSeconds(double seconds)
     {
-        int width = (Math.max(MIN_SECONDS, (int) Math.ceil(seconds)) + 1) * SECOND_WIDTH;
-        setPreferredSize(new Dimension(width, DEFAULT_HEIGHT));
+        int width = (Math.max(minSeconds, (int) Math.ceil(seconds)) + 1) * secondWidth;
+        setPreferredSize(new Dimension(width, defaultHeight));
         refreshLayout(); // revalidate + repaint
     }
 
@@ -156,41 +155,41 @@ public class CompositionView extends JComponent
 
     public Dimension getPreferredSize()
     {
-        int secondsShown = Math.max(MIN_SECONDS, (int) Math.ceil(composition.duration()) + 1);
-        int width = secondsShown * SECOND_WIDTH;
-        return new Dimension(width, DEFAULT_HEIGHT);
+        int secondsShown = Math.max(minSeconds, (int) Math.ceil(composition.duration()) + 1);
+        int width = secondsShown * secondWidth;
+        return new Dimension(width, defaultHeight);
     }
 
     // Making the grid so that you can see the time and the note at which point it is clicked
     private void drawTimeGrid(Graphics g)
     {
         Graphics2D g2d = (Graphics2D) g;
-        int visibleSeconds = Math.max(1, getWidth() / SECOND_WIDTH);
+        int visibleSeconds = Math.max(1, getWidth() / secondWidth);
 
-        int secondsShown = Math.max(MIN_SECONDS, (int) Math.ceil(composition.duration()) + 1);
+        int secondsShown = Math.max(minSeconds, (int) Math.ceil(composition.duration()) + 1);
         int viewHeight = getHeight();
 
         for (int second = 0; second <= secondsShown; second++)
         {
-            int x = second * SECOND_WIDTH;
+            int x = second * secondWidth;
 
             // Draw the main lines
-            g2d.setColor(GRAY);
+            g2d.setColor(Color.GRAY);
             g2d.setStroke(new BasicStroke(2));
             g2d.drawLine(x, 0, x, viewHeight);
 
             // Draw the second label
-            g2d.setColor(BLACK);
+            g2d.setColor(Color.BLACK);
             g2d.drawString(second + "s", x + 2, 12);
 
             // Draw the subdivisions lines (8ths)
             g2d.setStroke(new BasicStroke(1));
 
             // loops to draw 7 subdivision lines between each second
-            for (int sub = 1; sub < SUBDIVISIONS; sub++)
+            for (int sub = 1; sub < subdivisions; sub++)
             {
-                int subX = x + (sub * SECOND_WIDTH / SUBDIVISIONS);
-                g2d.setColor(LIGHT_GRAY);
+                int subX = x + (sub * secondWidth / subdivisions);
+                g2d.setColor(Color.LIGHT_GRAY);
                 g2d.drawLine(subX, 0, subX, viewHeight);
             }
 
@@ -202,8 +201,8 @@ public class CompositionView extends JComponent
     private void displayNote(Graphics g, Note note, List<Integer> uniqueKeys)
     {
         int rowIndex = uniqueKeys.indexOf(note.key());
-        int x1 = (int) (note.startTime() * SECOND_WIDTH);
-        int x2 = (int) (note.endTime() * SECOND_WIDTH);
+        int x1 = (int) (note.startTime() * secondWidth);
+        int x2 = (int) (note.endTime() * secondWidth);
 
         // Only display the notes that are there
         int totalNotes = uniqueKeys.size();
@@ -212,22 +211,22 @@ public class CompositionView extends JComponent
         // flips the Y axis so that the higher notes at the top and lower notes on the bottom
         int y1 = getHeight() - (rowIndex + 1) * noteHeight;
 
-        g.setColor(CYAN);
+        g.setColor(Color.CYAN);
         g.fillRect(x1, y1, x2 - x1, noteHeight);
-        g.setColor(BLACK);
+        g.setColor(Color.BLACK);
         g.drawRect(x1, y1, x2 - x1, noteHeight);
 
         // Add the note name to the block as it is played
-        g.setColor(BLACK);
+        g.setColor(Color.BLACK);
         String noteLabel = note.getName();
         g.drawString(noteLabel, x1 + 5, y1 + noteHeight / 2 + 5);
     }
 
     private void displayCurrentTimeLine(Graphics g)
     {
-        int currentTimeX = (int) (currentTime * SECOND_WIDTH);
-        g.setColor(ORANGE);
-        g.fillRect(currentTimeX, 0, CURRENT_TIME_WIDTH, getHeight());
+        int currentTimeX = (int) (currentTime * secondWidth);
+        g.setColor(Color.ORANGE);
+        g.fillRect(currentTimeX, 0, currentTimeWidth, getHeight());
     }
 
     public double getCurrentTime()
@@ -237,7 +236,7 @@ public class CompositionView extends JComponent
 
     public void setCurrentTime(double currentTime)
     {
-        this.currentTime = Note.roundToNearestEighth(currentTime);
+        this.currentTime = new Note(0, 0, 0).roundToNearestEighth(currentTime);
         refreshLayout();
     }
 
@@ -255,7 +254,7 @@ public class CompositionView extends JComponent
     private void deleteNoteAtPoint(Point p)
     {
         // Calculate the time and note from the mouse coordinates
-        double clickedTime = (double) p.x / SECOND_WIDTH;
+        double clickedTime = (double) p.x / secondWidth;
 
         List<Integer> uniqueKeys = getUniqueSortedKeys();
         int totalNotes = uniqueKeys.size();
@@ -284,7 +283,7 @@ public class CompositionView extends JComponent
 
     private void setTimeAtPoint(Point p)
     {
-        double newTime = (double) p.x / SECOND_WIDTH;
+        double newTime = (double) p.x / secondWidth;
 
         // Make sure that the time isn't negative
         if (newTime < 0)

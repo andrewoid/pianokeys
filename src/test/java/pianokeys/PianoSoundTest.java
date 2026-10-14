@@ -21,10 +21,10 @@ class PianoSoundTest
         PianoSound piano = new PianoSound(synthesizer, channel);
 
         // when
-        piano.playNote(PianoSound.C4);
+        piano.playNote(piano.c4);
 
         // then
-        verify(channel).noteOn(PianoSound.C4, 127);
+        verify(channel).noteOn(piano.c4, 127);
     }
 
     @Test
@@ -34,10 +34,10 @@ class PianoSoundTest
         PianoSound piano = new PianoSound(synthesizer, channel);
 
         // when
-        piano.stopNote(PianoSound.C4);
+        piano.stopNote(piano.c4);
 
         // then
-        verify(channel).noteOff(PianoSound.C4);
+        verify(channel).noteOff(piano.c4);
     }
 
     @Test

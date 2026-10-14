@@ -7,7 +7,7 @@ public class PianoController
     private final Composition composition;
     private final PianoView pianoView;
     private final Recorder recorder;
-    private FallingNotesView fallingNotesView;
+    private FallingNotesController fallingNotesController;
     private CompositionRunnable runnable;
 
     private boolean recording = true;
@@ -32,7 +32,7 @@ public class PianoController
     public void playNote(int note)
     {
         sound.playNote(note);
-        if (fallingNotesView != null && fallingNotesView.wasRecentlyHit(note))
+        if (fallingNotesController != null && fallingNotesController.wasRecentlyHit(note))
         {
             pianoView.showKeyHit(note, new java.awt.Color(144, 238, 144));
         } else
@@ -64,13 +64,13 @@ public class PianoController
 
     public boolean playComposition()
     {
-        if (fallingNotesView != null)
+        if (fallingNotesController != null)
         {
-            if (fallingNotesView.isRunning())
+            if (fallingNotesController.isRunning())
             {
                 return false;
             }
-            fallingNotesView.start();
+            fallingNotesController.start();
             return true;
         }
         //going to be using compositionRunnable
@@ -85,9 +85,9 @@ public class PianoController
 
     public void stopComposition()
     {
-        if (fallingNotesView != null)
+        if (fallingNotesController != null)
         {
-            fallingNotesView.stop();
+            fallingNotesController.stop();
             sound.silenceSong();
             return;
         }
@@ -105,9 +105,9 @@ public class PianoController
         compositionView.setCurrentTime(0);
         compositionView.repaint();
         recorder.reset();
-        if (fallingNotesView != null)
+        if (fallingNotesController != null)
         {
-            fallingNotesView.reset();
+            fallingNotesController.reset();
         }
     }
 
@@ -115,25 +115,25 @@ public class PianoController
     public void restartComposition()
     {
         compositionView.setCurrentTime(0);
-        if (fallingNotesView != null)
+        if (fallingNotesController != null)
         {
-            fallingNotesView.reset();
+            fallingNotesController.reset();
             sound.silenceSong();
-            fallingNotesView.start();
+            fallingNotesController.start();
         }
     }
 
-    public void setFallingNotesView(FallingNotesView fallingNotesView)
+    public void setFallingNotesController(FallingNotesController fallingNotesController)
     {
-        this.fallingNotesView = fallingNotesView;
+        this.fallingNotesController = fallingNotesController;
         recording = false;
-        fallingNotesView.setNoteHitListener(note ->
+        fallingNotesController.setNoteHitListener(note ->
         {
             pianoView.showKeyHit(note.key(), new java.awt.Color(255, 190, 80));
             sound.playSongNote(note.key());
         });
-        fallingNotesView.setNoteEndListener(note -> sound.stopSongNote(note.key()));
-        fallingNotesView.addFinishedListener(sound::silenceSong);
+        fallingNotesController.setNoteEndListener(note -> sound.stopSongNote(note.key()));
+        fallingNotesController.addFinishedListener(sound::silenceSong);
     }
 
     //changes the current instrument sound

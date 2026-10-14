@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static pianokeys.PianoSound.C4;
 
 class PianoControllerTest
 {
@@ -20,11 +19,11 @@ class PianoControllerTest
         PianoController controller = new PianoController(compositionView, sound, composition, pianoView);
 
         // when
-        controller.playNote(C4);
+        controller.playNote(60);
 
         // then
-        verify(sound).playNote(C4);
-        verify(pianoView).showKeyPlayed(C4, true);
+        verify(sound).playNote(60);
+        verify(pianoView).showKeyPlayed(60, true);
     }
 
     @Test
@@ -34,11 +33,11 @@ class PianoControllerTest
         PianoController controller = new PianoController(compositionView, sound, composition, pianoView);
 
         // when
-        controller.stopNote(C4);
+        controller.stopNote(60);
 
         // then
-        verify(sound).stopNote(C4);
-        verify(pianoView).showKeyPlayed(C4, false);
+        verify(sound).stopNote(60);
+        verify(pianoView).showKeyPlayed(60, false);
         verify(compositionView).refreshLayout();
     }
 
@@ -88,7 +87,7 @@ class PianoControllerTest
     {
         // given
         PianoController controller = new PianoController(compositionView, sound, composition, pianoView);
-        composition.addNote(new Note(C4, 0, 0.125));
+        composition.addNote(new Note(60, 0, 0.125));
 
         // when
         controller.eraseComposition();
@@ -145,8 +144,8 @@ class PianoControllerTest
 
         // when
         controller.setRecording(false);
-        controller.playNote(C4);
-        controller.stopNote(C4);
+        controller.playNote(60);
+        controller.stopNote(60);
 
         // then
         assertEquals(0, composition.getNoteList().size());

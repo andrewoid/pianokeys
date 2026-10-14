@@ -8,46 +8,45 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-import static java.awt.Color.*;
-import static pianokeys.PianoSound.C4;
-
 public class PianoView extends JLayeredPane
 {
 
     // declared everything
-    private static final String[] WHITE_KEY_NAMES = {"C", "D", "E", "F", "G", "A", "B"};
-    private static final String[] BLACK_KEY_NAMES = {"C#", "D#", "", "F#", "G#", "A#", ""};
+    private final String[] whiteKeyNames = {"C", "D", "E", "F", "G", "A", "B"};
+    private final String[] blackKeyNames = {"C#", "D#", "", "F#", "G#", "A#", ""};
 
     // White keys
-    private static final int WHITE_KEY_WIDTH = 30;
-    private static final int WHITE_KEY_HEIGHT = 250;
+    private final int whiteKeyWidth = 30;
+    private final int whiteKeyHeight = 250;
     // Black keys
-    private static final int BLACK_KEY_WIDTH = 18;
-    private static final int BLACK_KEY_HEIGHT = 170;
+    private final int blackKeyWidth = 18;
+    private final int blackKeyHeight = 170;
 
-    private static final int OCTAVES = 7;
+    private final int octaves = 7;
 
-    private final JButton[] whiteButtons = new JButton[WHITE_KEY_NAMES.length * OCTAVES];
-    private final JButton[] blackButtons = new JButton[5 * OCTAVES];
+    private final JButton[] whiteButtons = new JButton[whiteKeyNames.length * octaves];
+    private final JButton[] blackButtons = new JButton[5 * octaves];
 
-    private static final Color C_BASE_COLOR = new Color(255, 245, 200);
-    private static final Color C_HOVER_COLOR = new Color(255, 235, 180);
+    private final Color cBaseColor = new Color(255, 245, 200);
+    private final Color cHoverColor = new Color(255, 235, 180);
 
     private final Supplier<PianoController> controller;
+    private final PianoSound sound;
 
     private final HashMap<Integer, JButton> buttonsByNote = new HashMap<>();
 
-    public PianoView(Supplier<PianoController> controller)
+    public PianoView(Supplier<PianoController> controller, PianoSound sound)
     {
         this.controller = controller;
+        this.sound = sound;
         JPanel whiteKeysPanel = createWhiteKeysPanel();
         JPanel blackKeysPanel = createBlackKeysPanel();
 
-        int totalWidth = WHITE_KEY_NAMES.length * OCTAVES * WHITE_KEY_WIDTH;
-        this.setPreferredSize(new Dimension(totalWidth, WHITE_KEY_HEIGHT));
+        int totalWidth = whiteKeyNames.length * octaves * whiteKeyWidth;
+        this.setPreferredSize(new Dimension(totalWidth, whiteKeyHeight));
 
-        whiteKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
-        blackKeysPanel.setBounds(0, 0, totalWidth, WHITE_KEY_HEIGHT);
+        whiteKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
+        blackKeysPanel.setBounds(0, 0, totalWidth, whiteKeyHeight);
 
         // using different layers to add the panels
         this.add(whiteKeysPanel, Integer.valueOf(0));
@@ -59,23 +58,23 @@ public class PianoView extends JLayeredPane
     {
         JPanel whiteKeysPanel = new JPanel(null);
         whiteKeysPanel.setOpaque(true);
-        whiteKeysPanel.setBackground(LIGHT_GRAY);
+        whiteKeysPanel.setBackground(Color.LIGHT_GRAY);
 
         // nested for loop to run each octave to get 56 white keys
         // switched out i for keyIndex so that we can loop through without them all overlapping
-        for (int octave = 0; octave < OCTAVES; octave++)
+        for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < WHITE_KEY_NAMES.length; i++)
+            for (int i = 0; i < whiteKeyNames.length; i++)
             {
                 int note = getWhiteNoteForOctave(octave, i);
-                JButton button = createWhitePianoKey(WHITE_KEY_NAMES[i], note);
+                JButton button = createWhitePianoKey(whiteKeyNames[i], note);
 
                 // calculating position across all the indexes not just the first loop
-                int keyIndex = octave * WHITE_KEY_NAMES.length + i;
+                int keyIndex = octave * whiteKeyNames.length + i;
                 whiteButtons[keyIndex] = button;
                 buttonsByNote.put(note, button);
 
-                button.setBounds(keyIndex * WHITE_KEY_WIDTH, 0, WHITE_KEY_WIDTH, WHITE_KEY_HEIGHT);
+                button.setBounds(keyIndex * whiteKeyWidth, 0, whiteKeyWidth, whiteKeyHeight);
                 whiteKeysPanel.add(button);
             }
         }
@@ -89,26 +88,26 @@ public class PianoView extends JLayeredPane
         blackKeysPanel.setOpaque(false);
 
         int blackKeyIndex = 0;
-        for (int octave = 0; octave < OCTAVES; octave++)
+        for (int octave = 0; octave < octaves; octave++)
         {
-            for (int i = 0; i < BLACK_KEY_NAMES.length; i++)
+            for (int i = 0; i < blackKeyNames.length; i++)
             {
-                if (!BLACK_KEY_NAMES[i].isEmpty())
+                if (!blackKeyNames[i].isEmpty())
                 {
                     int note = getBlackNoteForOctave(octave, i);
                     if (note == -1)
                     {
                         continue;
                     } // skip keys that don't exist (like between E-F or B-C)
-                    JButton button = createBlackPianoKey(BLACK_KEY_NAMES[i], note);
+                    JButton button = createBlackPianoKey(blackKeyNames[i], note);
 
                     blackButtons[blackKeyIndex] = button;
 
-                    int whiteKeyPosition = octave * WHITE_KEY_NAMES.length + i;
+                    int whiteKeyPosition = octave * whiteKeyNames.length + i;
 
                     // make sure that the black keys are between the white keys
-                    int blackKeyX = (whiteKeyPosition * WHITE_KEY_WIDTH) + WHITE_KEY_WIDTH - (BLACK_KEY_WIDTH / 2);
-                    button.setBounds(blackKeyX, 0, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT);
+                    int blackKeyX = (whiteKeyPosition * whiteKeyWidth) + whiteKeyWidth - (blackKeyWidth / 2);
+                    button.setBounds(blackKeyX, 0, blackKeyWidth, blackKeyHeight);
                     blackKeysPanel.add(button);
 
                     buttonsByNote.put(note, button);
@@ -122,12 +121,12 @@ public class PianoView extends JLayeredPane
 
     private int getWhiteNoteForOctave(int octave, int whiteIndex)
     {
-        return PianoSound.whiteNotes[whiteIndex] + (octave - 3) * 12;
+        return sound.whiteNotes[whiteIndex] + (octave - 3) * 12;
     }
 
     private int getBlackNoteForOctave(int octave, int blackIndex)
     {
-        int base = PianoSound.blackNotes[blackIndex];
+        int base = sound.blackNotes[blackIndex];
         if (base == -1)
         {
             return -1;
@@ -141,26 +140,26 @@ public class PianoView extends JLayeredPane
         JButton key = new JButton(whiteKeyName);
 
         // make it look like a piano key
-        key.setForeground(BLACK);
+        key.setForeground(Color.BLACK);
         key.setFont(new Font("Arial", Font.BOLD, 16));
         key.setFocusPainted(false);
-        key.setBorder(BorderFactory.createLineBorder(BLACK, 2));
+        key.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
         key.setOpaque(true);
         key.setContentAreaFilled(true);
 
         final Color baseColor;
         final Color hoverColor;
 
-        if (note == C4)
+        if (note == sound.c4)
         {
-            baseColor = C_BASE_COLOR;
-            hoverColor = C_HOVER_COLOR;
+            baseColor = cBaseColor;
+            hoverColor = cHoverColor;
             key.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
             key.setToolTipText("Middle C (C4)");
         } else
         {
-            baseColor = WHITE;
-            hoverColor = LIGHT_GRAY;
+            baseColor = Color.WHITE;
+            hoverColor = Color.LIGHT_GRAY;
         }
         key.setBackground(baseColor);
 
@@ -175,7 +174,7 @@ public class PianoView extends JLayeredPane
                 if ((modifiers & InputEvent.BUTTON1_DOWN_MASK) != 0)
                 {
                     // left mouse button
-                    key.setBackground(DARK_GRAY);
+                    key.setBackground(Color.DARK_GRAY);
                     controller.get().playNote(note);
                 } else
                 {
@@ -198,7 +197,7 @@ public class PianoView extends JLayeredPane
             @Override
             public void mousePressed(MouseEvent evt)
             {
-                key.setBackground(DARK_GRAY);
+                key.setBackground(Color.DARK_GRAY);
                 controller.get().playNote(note);
             }
 
@@ -223,8 +222,8 @@ public class PianoView extends JLayeredPane
     private JButton createBlackPianoKey(String blackKeyName, int note)
     {
         JButton key = new JButton(blackKeyName);
-        key.setBackground(BLACK);
-        key.setForeground(WHITE);
+        key.setBackground(Color.BLACK);
+        key.setForeground(Color.WHITE);
         key.setFont(new Font("Arial", Font.BOLD, 16));
         key.setFocusPainted(false);
         key.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
@@ -240,19 +239,19 @@ public class PianoView extends JLayeredPane
                 int modifiers = evt.getModifiersEx();
                 if ((modifiers & InputEvent.BUTTON1_DOWN_MASK) != 0)
                 {
-                    key.setBackground(DARK_GRAY);
+                    key.setBackground(Color.DARK_GRAY);
                     // left mouse button
                     controller.get().playNote(note);
                 } else
                 {
-                    key.setBackground(LIGHT_GRAY);
+                    key.setBackground(Color.LIGHT_GRAY);
                 }
             }
 
             @Override
             public void mouseExited(MouseEvent evt)
             {
-                key.setBackground(BLACK);
+                key.setBackground(Color.BLACK);
                 int modifiers = evt.getModifiersEx();
                 if ((modifiers & InputEvent.BUTTON1_DOWN_MASK) != 0)
                 {
@@ -264,7 +263,7 @@ public class PianoView extends JLayeredPane
             @Override
             public void mousePressed(MouseEvent evt)
             {
-                key.setBackground(DARK_GRAY);
+                key.setBackground(Color.DARK_GRAY);
                 controller.get().playNote(note);
             }
 
@@ -275,10 +274,10 @@ public class PianoView extends JLayeredPane
                 // Check if mouse is still over the component
                 if (key.contains(evt.getPoint()))
                 {
-                    key.setBackground(LIGHT_GRAY);
+                    key.setBackground(Color.LIGHT_GRAY);
                 } else
                 {
-                    key.setBackground(BLACK);
+                    key.setBackground(Color.BLACK);
                 }
             }
         });
@@ -296,15 +295,15 @@ public class PianoView extends JLayeredPane
         Color releasedColor;
         if (isBlackNote(note))
         {
-            releasedColor = BLACK;
+            releasedColor = Color.BLACK;
         } else
         {
-            releasedColor = (note == C4) ? C_BASE_COLOR : WHITE;
+            releasedColor = (note == sound.c4) ? cBaseColor : Color.WHITE;
         }
 
         if (pressed)
         {
-            button.setBackground(PINK);
+            button.setBackground(Color.PINK);
         } else
         {
             button.setBackground(releasedColor);
