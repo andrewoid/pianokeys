@@ -50,7 +50,7 @@ public class BitMidiService
                 return Single.error(new IllegalArgumentException("BitMidi page has no MIDI download"));
             }
             return api.download(url).map(response ->
-                    new BitMidiFile(fileName(url, track), readBytes(response)));
+                    new BitMidiFile(fileName(url, track), readBytes(response).clone()));
         });
     }
 
