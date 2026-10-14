@@ -7,6 +7,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.function.Supplier;
+import javax.swing.border.Border;
+
+import static java.awt.Color.*;
 
 public class PianoView extends JLayeredPane
 {
@@ -27,8 +30,13 @@ public class PianoView extends JLayeredPane
     private final JButton[] whiteButtons = new JButton[whiteKeyNames.length * octaves];
     private final JButton[] blackButtons = new JButton[5 * octaves];
 
-    private final Color cBaseColor = new Color(255, 245, 200);
-    private final Color cHoverColor = new Color(255, 235, 180);
+    private static final Color C_BASE_COLOR = new Color(255, 245, 200);
+    private static final Color C_HOVER_COLOR = new Color(255, 235, 180);
+    private static final Font KEY_FONT = new Font("Arial", Font.BOLD, 16);
+    private static final Border WHITE_KEY_BORDER = BorderFactory.createLineBorder(BLACK, 2);
+    private static final Border MIDDLE_C_BORDER = BorderFactory.createLineBorder(RED, 3);
+    private static final Border BLACK_KEY_BORDER = BorderFactory.createLineBorder(GRAY, 1);
+
 
     private final Supplier<PianoController> controller;
     private final PianoSound sound;
@@ -140,10 +148,10 @@ public class PianoView extends JLayeredPane
         JButton key = new JButton(whiteKeyName);
 
         // make it look like a piano key
-        key.setForeground(Color.BLACK);
-        key.setFont(new Font("Arial", Font.BOLD, 16));
+        key.setForeground(BLACK);
+        key.setFont(KEY_FONT);
         key.setFocusPainted(false);
-        key.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+        key.setBorder(WHITE_KEY_BORDER);
         key.setOpaque(true);
         key.setContentAreaFilled(true);
 
@@ -152,9 +160,10 @@ public class PianoView extends JLayeredPane
 
         if (note == sound.c4)
         {
-            baseColor = cBaseColor;
-            hoverColor = cHoverColor;
-            key.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+            key.setBorder(BorderFactory.createLineBorder(RED, 3));
+            baseColor = C_BASE_COLOR;
+            hoverColor = C_HOVER_COLOR;
+            key.setBorder(MIDDLE_C_BORDER);
             key.setToolTipText("Middle C (C4)");
         } else
         {
@@ -222,11 +231,12 @@ public class PianoView extends JLayeredPane
     private JButton createBlackPianoKey(String blackKeyName, int note)
     {
         JButton key = new JButton(blackKeyName);
-        key.setBackground(Color.BLACK);
-        key.setForeground(Color.WHITE);
-        key.setFont(new Font("Arial", Font.BOLD, 16));
+        
+        key.setBackground(BLACK);
+        key.setForeground(WHITE);
+        key.setFont(KEY_FONT);
         key.setFocusPainted(false);
-        key.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        key.setBorder(BLACK_KEY_BORDER);
         key.setOpaque(true);
         key.setContentAreaFilled(true);
 
@@ -251,7 +261,7 @@ public class PianoView extends JLayeredPane
             @Override
             public void mouseExited(MouseEvent evt)
             {
-                key.setBackground(Color.BLACK);
+                key.setBackground(BLACK);
                 int modifiers = evt.getModifiersEx();
                 if ((modifiers & InputEvent.BUTTON1_DOWN_MASK) != 0)
                 {
@@ -277,7 +287,7 @@ public class PianoView extends JLayeredPane
                     key.setBackground(Color.LIGHT_GRAY);
                 } else
                 {
-                    key.setBackground(Color.BLACK);
+                    key.setBackground(BLACK);
                 }
             }
         });
@@ -295,10 +305,10 @@ public class PianoView extends JLayeredPane
         Color releasedColor;
         if (isBlackNote(note))
         {
-            releasedColor = Color.BLACK;
+            releasedColor = BLACK;
         } else
         {
-            releasedColor = (note == sound.c4) ? cBaseColor : Color.WHITE;
+            releasedColor = (note == sound.c4) ? C_BASE_COLOR : Color.WHITE;
         }
 
         if (pressed)
