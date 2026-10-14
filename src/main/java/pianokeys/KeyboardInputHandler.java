@@ -29,54 +29,48 @@ import static pianokeys.PianoSound.C4;
  */
 public class KeyboardInputHandler
 {
-    private static final Map<Integer, Integer> KEY_TO_NOTE = new HashMap<>();
+    private static final Map<Integer, Integer> KEY_TO_NOTE = Map.ofEntries(
+            // white keys
+            Map.entry(KeyEvent.VK_A, C4),
+            Map.entry(KeyEvent.VK_S, C4 + 2),
+            Map.entry(KeyEvent.VK_D, C4 + 4),
+            Map.entry(KeyEvent.VK_F, C4 + 5),
+            Map.entry(KeyEvent.VK_G, C4 + 7),
+            Map.entry(KeyEvent.VK_H, C4 + 9),
+            Map.entry(KeyEvent.VK_J, C4 + 11),
+            Map.entry(KeyEvent.VK_K, C4 + 12),
+            Map.entry(KeyEvent.VK_L, C4 + 14),
+            Map.entry(KeyEvent.VK_SEMICOLON, C4 + 16),
 
-    static
-    {
-        // white keys
-        KEY_TO_NOTE.put(KeyEvent.VK_A, C4);
-        KEY_TO_NOTE.put(KeyEvent.VK_S, C4 + 2);
-        KEY_TO_NOTE.put(KeyEvent.VK_D, C4 + 4);
-        KEY_TO_NOTE.put(KeyEvent.VK_F, C4 + 5);
-        KEY_TO_NOTE.put(KeyEvent.VK_G, C4 + 7);
-        KEY_TO_NOTE.put(KeyEvent.VK_H, C4 + 9);
-        KEY_TO_NOTE.put(KeyEvent.VK_J, C4 + 11);
-        KEY_TO_NOTE.put(KeyEvent.VK_K, C4 + 12);
-        KEY_TO_NOTE.put(KeyEvent.VK_L, C4 + 14);
-        KEY_TO_NOTE.put(KeyEvent.VK_SEMICOLON, C4 + 16);
+            // black keys
+            Map.entry(KeyEvent.VK_W, C4 + 1),
+            Map.entry(KeyEvent.VK_E, C4 + 3),
+            Map.entry(KeyEvent.VK_T, C4 + 6),
+            Map.entry(KeyEvent.VK_Y, C4 + 8),
+            Map.entry(KeyEvent.VK_U, C4 + 10),
+            Map.entry(KeyEvent.VK_O, C4 + 13),
+            Map.entry(KeyEvent.VK_P, C4 + 15)
+    );
 
-        // black keys
-        KEY_TO_NOTE.put(KeyEvent.VK_W, C4 + 1);
-        KEY_TO_NOTE.put(KeyEvent.VK_E, C4 + 3);
-        KEY_TO_NOTE.put(KeyEvent.VK_T, C4 + 6);
-        KEY_TO_NOTE.put(KeyEvent.VK_Y, C4 + 8);
-        KEY_TO_NOTE.put(KeyEvent.VK_U, C4 + 10);
-        KEY_TO_NOTE.put(KeyEvent.VK_O, C4 + 13);
-        KEY_TO_NOTE.put(KeyEvent.VK_P, C4 + 15);
-    }
-
-    private static final Map<Integer, String> KEY_TO_LABEL = new HashMap<>();
-
-    static
-    {
-        KEY_TO_LABEL.put(KeyEvent.VK_A, "A");
-        KEY_TO_LABEL.put(KeyEvent.VK_S, "S");
-        KEY_TO_LABEL.put(KeyEvent.VK_D, "D");
-        KEY_TO_LABEL.put(KeyEvent.VK_F, "F");
-        KEY_TO_LABEL.put(KeyEvent.VK_G, "G");
-        KEY_TO_LABEL.put(KeyEvent.VK_H, "H");
-        KEY_TO_LABEL.put(KeyEvent.VK_J, "J");
-        KEY_TO_LABEL.put(KeyEvent.VK_K, "K");
-        KEY_TO_LABEL.put(KeyEvent.VK_L, "L");
-        KEY_TO_LABEL.put(KeyEvent.VK_SEMICOLON, ";");
-        KEY_TO_LABEL.put(KeyEvent.VK_W, "W");
-        KEY_TO_LABEL.put(KeyEvent.VK_E, "E");
-        KEY_TO_LABEL.put(KeyEvent.VK_T, "T");
-        KEY_TO_LABEL.put(KeyEvent.VK_Y, "Y");
-        KEY_TO_LABEL.put(KeyEvent.VK_U, "U");
-        KEY_TO_LABEL.put(KeyEvent.VK_O, "O");
-        KEY_TO_LABEL.put(KeyEvent.VK_P, "P");
-    }
+    private static final Map<Integer, String> KEY_TO_LABEL = Map.ofEntries(
+            Map.entry(KeyEvent.VK_A, "A"),
+            Map.entry(KeyEvent.VK_S, "S"),
+            Map.entry(KeyEvent.VK_D, "D"),
+            Map.entry(KeyEvent.VK_F, "F"),
+            Map.entry(KeyEvent.VK_G, "G"),
+            Map.entry(KeyEvent.VK_H, "H"),
+            Map.entry(KeyEvent.VK_J, "J"),
+            Map.entry(KeyEvent.VK_K, "K"),
+            Map.entry(KeyEvent.VK_L, "L"),
+            Map.entry(KeyEvent.VK_SEMICOLON, ";"),
+            Map.entry(KeyEvent.VK_W, "W"),
+            Map.entry(KeyEvent.VK_E, "E"),
+            Map.entry(KeyEvent.VK_T, "T"),
+            Map.entry(KeyEvent.VK_Y, "Y"),
+            Map.entry(KeyEvent.VK_U, "U"),
+            Map.entry(KeyEvent.VK_O, "O"),
+            Map.entry(KeyEvent.VK_P, "P")
+    );
 
     // PianoView renders 7 octaves, with the home octave (this class's un-shifted
     // mapping) at index 3 - so the shift is only valid from -3 to +3.
