@@ -34,6 +34,7 @@ public class PianoView extends JLayeredPane
     private static final Color C_BASE_COLOR = new Color(255, 245, 200);
     private static final Color C_HOVER_COLOR = new Color(255, 235, 180);
     private static final Font KEY_FONT = new Font("Arial", Font.BOLD, 16);
+    private static final Font BLACK_KEY_FONT = new Font("Arial", Font.BOLD, 9);
     private static final Border WHITE_KEY_BORDER = BorderFactory.createLineBorder(BLACK, 2);
     private static final Border MIDDLE_C_BORDER = BorderFactory.createLineBorder(RED, 3);
     private static final Border BLACK_KEY_BORDER = BorderFactory.createLineBorder(GRAY, 1);
@@ -259,7 +260,7 @@ public class PianoView extends JLayeredPane
         
         key.setBackground(BLACK);
         key.setForeground(WHITE);
-        key.setFont(KEY_FONT);
+        key.setFont(BLACK_KEY_FONT);
         key.setFocusPainted(false);
         key.setBorder(BLACK_KEY_BORDER);
         key.setOpaque(true);
