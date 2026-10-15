@@ -107,14 +107,64 @@ public class PianoGui extends JFrame
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
 
-        topPanel.add(buttonPanel, BorderLayout.SOUTH);
+        topPanel.add(buttonPanel, BorderLayout.CENTER);
+
+        // Scrubber (progress bar): drag left/right to jump earlier or later in the song,
+        // the same way you scrub a video or music player. Labels show "how far in" / "total length".
+        double songDuration = Math.max(composition.duration(), 0.001);
+        // JSlider uses integers; store thousandths of a second for smoother dragging.
+        int sliderMax = Math.max(1, (int) Math.round(songDuration * 1000));
+        JLabel currentTimeLabel = new JLabel(formatTime(0));
+        JLabel durationLabel = new JLabel(formatTime(songDuration));
+        currentTimeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        durationLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        JSlider seekSlider = new JSlider(0, sliderMax, 0);
+        seekSlider.setPaintTrack(true);
+        seekSlider.setPaintTicks(false);
+        // When true, the slider is being updated by playback — ignore that as a user drag.
+        final boolean[] updatingSlider = {false};
+        seekSlider.addChangeListener(e ->
+        {
+            if (updatingSlider[0])
+            {
+                return;
+            }
+            // Convert slider units back to seconds, then jump sound + tiles to that spot.
+            double seekSeconds = seekSlider.getValue() / 1000.0;
+            currentTimeLabel.setText(formatTime(seekSeconds));
+            controller.seekTo(seekSeconds);
+        });
+        // While the song plays, keep the thumb and "current time" label moving automatically.
+        fallingNotesController.setTimeListener(timeSeconds ->
+                SwingUtilities.invokeLater(() ->
+                {
+                    updatingSlider[0] = true;
+                    seekSlider.setValue((int) Math.round(timeSeconds * 1000));
+                    currentTimeLabel.setText(formatTime(timeSeconds));
+                    updatingSlider[0] = false;
+                }));
+
+        JPanel scrubberPanel = new JPanel(new BorderLayout(8, 0));
+        scrubberPanel.setBorder(BorderFactory.createEmptyBorder(4, 16, 8, 16));
+        scrubberPanel.add(currentTimeLabel, BorderLayout.WEST);
+        scrubberPanel.add(seekSlider, BorderLayout.CENTER);
+        scrubberPanel.add(durationLabel, BorderLayout.EAST);
+        topPanel.add(scrubberPanel, BorderLayout.SOUTH);
+
         contentPanel.add(topPanel, BorderLayout.NORTH);
-        fallingNotesController.setFinishedListener(() ->
+        fallingNotesController.addFinishedListener(() ->
                 play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
         contentPanel.revalidate();
         contentPanel.repaint();
         centerOnOctave(pianoScrollPane, pianoView, HOME_OCTAVE_INDEX);
 
+    }
+
+    /** Formats seconds as m:ss (for example, 75 seconds -> "1:15"). */
+    private static String formatTime(double seconds)
+    {
+        int totalSeconds = (int) Math.floor(Math.max(0, seconds));
+        return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
     }
 
     private void setUpFrame()

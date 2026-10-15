@@ -7,9 +7,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 
+/**
+ * Drives the "falling tiles" view and song playback timing.
+ */
 public class FallingNotesController
 {
+    // Extra seconds before the first note so tiles can fall into view first (like a countdown).
     private final double leadTimeSeconds = 5.0;
     private final int pixelsPerSecond = 70;
     private final int timerDelayMs = 16;
@@ -17,15 +22,21 @@ public class FallingNotesController
     private final Composition composition;
     private final FallingNotesView view;
     private final Timer timer;
+    // Notes that have already been reached (their start time is at or before currentTime).
     private final Set<Note> hitNotes = new HashSet<>();
+    // Notes that should be audible right now (started but not yet finished).
     private final Set<Note> soundingNotes = new HashSet<>();
     private final Map<Note, Double> visualHeights = new HashMap<>();
     private long startedAt;
+    // Position in the song, in seconds. Negative values are the pre-song lead-in.
     private double currentTime = -leadTimeSeconds;
+    // How far we have progressed (including lead-in) when paused, so Play can resume.
     private double elapsedBeforePause;
     private Consumer<Note> noteHitListener = note -> { };
     private Consumer<Note> noteEndListener = note -> { };
     private Runnable finishedListener = () -> { };
+    // Notifies the scrubber bar whenever the playhead moves.
+    private DoubleConsumer timeListener = time -> { };
 
     public FallingNotesController(Composition composition)
     {
@@ -40,25 +51,35 @@ public class FallingNotesController
 
     private void update()
     {
+        // Advance the playhead based on real elapsed time.
         currentTime = (System.nanoTime() - startedAt) / 1_000_000_000.0 - leadTimeSeconds;
-        if (currentTime > composition.duration())
+        // Song finished: freeze at the end so the scrubber can be dragged back.
+        if (currentTime >= composition.duration())
         {
             stop();
+            currentTime = composition.duration();
+            elapsedBeforePause = currentTime + leadTimeSeconds;
+            soundingNotes.clear();
             finishedListener.run();
+            notifyTime();
+            view.repaint();
             return;
         }
         for (Note note : composition.getNoteList())
         {
+            // Note's hold time ended — stop its sound.
             if (note.endTime() <= currentTime && soundingNotes.remove(note))
             {
                 noteEndListener.accept(note);
             }
+            // Note's start time reached — begin its sound (once).
             if (note.startTime() <= currentTime && hitNotes.add(note))
             {
                 soundingNotes.add(note);
                 noteHitListener.accept(note);
             }
         }
+        notifyTime();
         view.repaint();
     }
 
@@ -176,13 +197,21 @@ public class FallingNotesController
                 .anyMatch(currentNote -> Math.abs(currentTime - currentNote.startTime()) <= 0.5);
     }
 
+    /** Resume or begin playback from the current playhead position. */
     public void start()
     {
         startedAt = System.nanoTime() - (long) (elapsedBeforePause * 1_000_000_000.0);
+        // Re-trigger notes that were already "held down" at the pause/seek position.
+        for (Note note : soundingNotes)
+        {
+            noteHitListener.accept(note);
+        }
         timer.start();
+        notifyTime();
         view.repaint();
     }
 
+    /** Pause playback, remembering where we stopped. */
     public void stop()
     {
         if (!timer.isRunning())
@@ -204,6 +233,67 @@ public class FallingNotesController
         this.finishedListener = finishedListener;
     }
 
+    /** Called whenever the playhead moves so the scrubber UI can stay in sync. */
+    public void setTimeListener(DoubleConsumer timeListener)
+    {
+        this.timeListener = timeListener;
+    }
+
+    /**
+     * Jump the playhead to a new place in the song (like dragging a YouTube progress bar).
+     * {@code timeSeconds} is seconds from the start of the song (0 = beginning).
+     * If the song was playing, it keeps playing from the new spot; if paused, it stays paused.
+     * Falling tiles are redrawn to match that moment in the song.
+     */
+    public void seekTo(double timeSeconds)
+    {
+        boolean wasRunning = timer.isRunning();
+        double duration = composition.duration();
+        // Keep the requested time inside the song (cannot go before 0 or past the end).
+        double clamped = Math.max(0, Math.min(timeSeconds, duration));
+
+        // Stop whatever was ringing at the old position.
+        for (Note note : new HashSet<>(soundingNotes))
+        {
+            noteEndListener.accept(note);
+        }
+        soundingNotes.clear();
+        hitNotes.clear();
+
+        currentTime = clamped;
+        // elapsed includes the lead-in offset used by start()/stop() timing math.
+        elapsedBeforePause = clamped + leadTimeSeconds;
+
+        // Rebuild "which notes already happened" and "which notes are held right now"
+        // so tiles and sound match the new playhead position.
+        for (Note note : composition.getNoteList())
+        {
+            if (note.startTime() <= clamped)
+            {
+                hitNotes.add(note);
+                // Still within this note's hold window — it should be sounding.
+                if (note.endTime() > clamped)
+                {
+                    soundingNotes.add(note);
+                    if (wasRunning)
+                    {
+                        noteHitListener.accept(note);
+                    }
+                }
+            }
+        }
+
+        if (wasRunning)
+        {
+            // Adjust the clock so the next update() continues from the seeked time.
+            startedAt = System.nanoTime() - (long) (elapsedBeforePause * 1_000_000_000.0);
+        }
+
+        notifyTime();
+        view.repaint();
+    }
+
+    /** Return to the pre-song lead-in (before the first note). */
     public void reset()
     {
         stop();
@@ -211,6 +301,13 @@ public class FallingNotesController
         hitNotes.clear();
         soundingNotes.clear();
         currentTime = -leadTimeSeconds;
+        notifyTime();
         view.repaint();
+    }
+
+    /** Tell the scrubber the current song position (never negative; capped at the end). */
+    private void notifyTime()
+    {
+        timeListener.accept(Math.max(0, Math.min(currentTime, composition.duration())));
     }
 }
