@@ -247,11 +247,6 @@ public class FallingNotesController
      */
     public void seekTo(double timeSeconds)
     {
-        boolean wasRunning = timer.isRunning();
-        double duration = composition.duration();
-        // Keep the requested time inside the song (cannot go before 0 or past the end).
-        double clamped = Math.max(0, Math.min(timeSeconds, duration));
-
         // Stop whatever was ringing at the old position.
         for (Note note : new HashSet<>(soundingNotes))
         {
@@ -259,6 +254,11 @@ public class FallingNotesController
         }
         soundingNotes.clear();
         hitNotes.clear();
+
+        boolean wasRunning = timer.isRunning();
+        double duration = composition.duration();
+        // Keep the requested time inside the song (cannot go before 0 or past the end).
+        double clamped = Math.max(0, Math.min(timeSeconds, duration));
 
         currentTime = clamped;
         // elapsed includes the lead-in offset used by start()/stop() timing math.

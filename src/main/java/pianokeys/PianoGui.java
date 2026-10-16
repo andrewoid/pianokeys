@@ -23,6 +23,8 @@ public class PianoGui extends JFrame
     // index of the keyboard-shortcut home octave, matching KeyboardInputHandler's un-shifted mapping
     private static final int HOME_OCTAVE_INDEX = 3;
 
+    private static final Font TIME_LABEL_FONT = new Font("Arial", Font.PLAIN, 14);
+
     //dropdown to change instrument
     // MIDI sound system
     private PianoSound sound;
@@ -69,7 +71,6 @@ public class PianoGui extends JFrame
         compositionScrollPane.setPreferredSize(new Dimension(800, 200));
 
         FallingNotesView fallingNotesView = fallingNotesController.getView();
-        contentPanel.add(fallingNotesView, BorderLayout.CENTER);
 
         // buttons panel
         JButton play = new JButton(new ImageIcon(getClass().getResource("/images/play.png")));
@@ -108,17 +109,19 @@ public class PianoGui extends JFrame
         buttonPanel.add(bitMidiSearch);
 
         topPanel.add(buttonPanel, BorderLayout.CENTER);
+        contentPanel.add(topPanel, BorderLayout.NORTH);
 
-        // Scrubber (progress bar): drag left/right to jump earlier or later in the song,
+        // Scrubber (progress bar): drag up/down to jump earlier or later in the song,
         // the same way you scrub a video or music player. Labels show "how far in" / "total length".
         double songDuration = Math.max(composition.duration(), 0.001);
         // JSlider uses integers; store thousandths of a second for smoother dragging.
         int sliderMax = Math.max(1, (int) Math.round(songDuration * 1000));
-        JLabel currentTimeLabel = new JLabel(formatTime(0));
-        JLabel durationLabel = new JLabel(formatTime(songDuration));
-        currentTimeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        durationLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        JSlider seekSlider = new JSlider(0, sliderMax, 0);
+        JLabel currentTimeLabel = new JLabel(formatTime(0), SwingConstants.CENTER);
+        JLabel durationLabel = new JLabel(formatTime(songDuration), SwingConstants.CENTER);
+        currentTimeLabel.setFont(TIME_LABEL_FONT);
+        durationLabel.setFont(TIME_LABEL_FONT);
+        // Vertical slider: bottom = start of song, top = end (Swing default).
+        JSlider seekSlider = new JSlider(JSlider.VERTICAL, 0, sliderMax, 0);
         seekSlider.setPaintTrack(true);
         seekSlider.setPaintTicks(false);
         // When true, the slider is being updated by playback — ignore that as a user drag.
@@ -144,14 +147,16 @@ public class PianoGui extends JFrame
                     updatingSlider[0] = false;
                 }));
 
-        JPanel scrubberPanel = new JPanel(new BorderLayout(8, 0));
-        scrubberPanel.setBorder(BorderFactory.createEmptyBorder(4, 16, 8, 16));
-        scrubberPanel.add(currentTimeLabel, BorderLayout.WEST);
+        JPanel scrubberPanel = new JPanel(new BorderLayout(0, 8));
+        scrubberPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 12));
+        scrubberPanel.add(durationLabel, BorderLayout.NORTH);
         scrubberPanel.add(seekSlider, BorderLayout.CENTER);
-        scrubberPanel.add(durationLabel, BorderLayout.EAST);
-        topPanel.add(scrubberPanel, BorderLayout.SOUTH);
+        scrubberPanel.add(currentTimeLabel, BorderLayout.SOUTH);
 
-        contentPanel.add(topPanel, BorderLayout.NORTH);
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(fallingNotesView, BorderLayout.CENTER);
+        centerPanel.add(scrubberPanel, BorderLayout.EAST);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
         fallingNotesController.addFinishedListener(() ->
                 play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
         contentPanel.revalidate();
