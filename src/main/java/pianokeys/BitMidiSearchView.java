@@ -77,7 +77,6 @@ public class BitMidiSearchView extends JPanel
 
     private JScrollPane createResultsScrollPane()
     {
-        JList<BitMidiTrack> resultsList = new JList<>(results);
         resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resultsList.setFont(FONT);
         resultsList.setBackground(WHITE);

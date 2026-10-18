@@ -83,6 +83,7 @@ public class FallingNotesController
             previousNotes.put(note.key(), note);
         }
     }
+
     /**
      * Replaces the falling notes with a new song and goes back to the start
      *
