@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 public class PianoGui extends JFrame
 {
@@ -103,8 +104,14 @@ public class PianoGui extends JFrame
                 controller.changeInstrument((String) instrumentDropdown.getSelectedItem()));
         buttonPanel.add(instrumentDropdown);
 
+        // a song picked in the BitMidi window replaces the song on screen
         JButton bitMidiSearch = new JButton("Search BitMidi");
-        bitMidiSearch.addActionListener(e -> openBitMidiSearch());
+        bitMidiSearch.addActionListener(e -> openBitMidiSearch(song ->
+        {
+            controller.loadComposition(song);
+            songTitle.setText(song.getName());
+            play.setIcon(new ImageIcon(getClass().getResource("/images/play.png")));
+        }));
         buttonPanel.add(bitMidiSearch);
 
         topPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -182,11 +189,11 @@ public class PianoGui extends JFrame
         });
     }
 
-    private void openBitMidiSearch()
+    private void openBitMidiSearch(Consumer<Composition> songLoader)
     {
         if (bitMidiSearchGui == null)
         {
-            bitMidiSearchGui = new BitMidiSearchGui();
+            bitMidiSearchGui = new BitMidiSearchGui(songLoader);
             bitMidiSearchGui.setLocationRelativeTo(this);
         }
         bitMidiSearchGui.setVisible(true);

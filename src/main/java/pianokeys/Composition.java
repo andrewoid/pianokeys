@@ -4,6 +4,7 @@ import javax.sound.midi.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.io.ByteArrayInputStream;
 
 public class Composition
 {
@@ -37,6 +38,26 @@ public class Composition
         } catch (IOException | InvalidMidiDataException e)
         {
             throw new IllegalStateException("Unable to load MIDI resource " + resourceName, e);
+        }
+    }
+
+    /**
+     * Reads a MIDI file that was downloaded, like one from BitMidi
+     *
+     * @param name the name of the song
+     * @param midi the bytes of the .mid file
+     * @return a Composition with the notes of the song
+     */
+    public Composition fromMidiBytes(String name, byte[] midi)
+    {
+        Composition composition = new Composition(name);
+        try
+        {
+            composition.addNotes(readNotes(MidiSystem.getSequence(new ByteArrayInputStream(midi))));
+            return composition;
+        } catch (IOException | InvalidMidiDataException e)
+        {
+            throw new IllegalStateException(name + " is not a MIDI file", e);
         }
     }
 
@@ -121,6 +142,11 @@ public class Composition
         // Add the time since the most recent tempo change.
         microseconds += (tick - previousTick) * (double) microsecondsPerQuarter / resolution;
         return microseconds / 1_000_000.0;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 
     public void setName(String name) {

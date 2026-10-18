@@ -3,6 +3,7 @@ package pianokeys;
 import pianokeys.net.BitMidiServiceFactory;
 
 import javax.swing.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class BitMidiSearchGui extends JFrame
@@ -11,7 +12,10 @@ public class BitMidiSearchGui extends JFrame
 
     private BitMidiSearchController controller;
 
-    public BitMidiSearchGui()
+    /**
+     * @param songLoader shows a downloaded song in the main window
+     */
+    public BitMidiSearchGui(Consumer<Composition> songLoader)
     {
         setUpFrame();
 
@@ -21,7 +25,8 @@ public class BitMidiSearchGui extends JFrame
         BitMidiSearchView view = new BitMidiSearchView(controllerSupplier);
 
         controller = new BitMidiSearchController(view,
-                new BitMidiServiceFactory(BIT_MIDI_URL).create());
+                new BitMidiServiceFactory(BIT_MIDI_URL).create(),
+                songLoader);
 
         add(view);
     }

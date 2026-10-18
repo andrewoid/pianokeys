@@ -4,6 +4,8 @@ import pianokeys.net.BitMidiTrack;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -27,9 +29,11 @@ public class BitMidiSearchView extends JPanel
     private final JButton nextButton = new JButton("Next >");
     private final JLabel pageLabel = new JLabel("Page 1");
     private final JLabel statusLabel = new JLabel("Enter a song name to search BitMidi");
+    private final JButton loadButton = new JButton("Load");
 
     // the list shows these tracks
     private final DefaultListModel<BitMidiTrack> results = new DefaultListModel<>();
+    private final JList<BitMidiTrack> resultsList = new JList<>(results);
 
     public BitMidiSearchView(Supplier<BitMidiSearchController> controller)
     {
@@ -44,6 +48,7 @@ public class BitMidiSearchView extends JPanel
         // nothing to page through until the first search
         previousButton.setEnabled(false);
         nextButton.setEnabled(false);
+        loadButton.setEnabled(false);
     }
 
     private JPanel createSearchPanel()
@@ -92,6 +97,24 @@ public class BitMidiSearchView extends JPanel
             }
         });
 
+        // Load only works once a song is picked
+        resultsList.addListSelectionListener(e ->
+        {
+            loadButton.setEnabled(resultsList.getSelectedValue() != null);
+        });
+
+        // double click a song to load it
+        resultsList.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {
+                if (e.getClickCount() == 2 && resultsList.getSelectedValue() != null)
+                {
+                    controller.get().loadSong(resultsList.getSelectedValue());
+                }
+            }
+        });
         return new JScrollPane(resultsList);
     }
 
@@ -106,12 +129,21 @@ public class BitMidiSearchView extends JPanel
             controller.get().nextPage();
         });
 
+        loadButton.addActionListener(e ->
+        {
+            controller.get().loadSong(resultsList.getSelectedValue());
+        });
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(previousButton);
         buttonPanel.add(pageLabel);
         buttonPanel.add(nextButton);
 
+        JPanel loadPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        loadPanel.add(loadButton);
+
         JPanel pagePanel = new JPanel(new BorderLayout());
+        pagePanel.add(loadPanel, BorderLayout.NORTH);
         pagePanel.add(statusLabel, BorderLayout.CENTER);
         pagePanel.add(buttonPanel, BorderLayout.EAST);
         return pagePanel;
@@ -161,6 +193,8 @@ public class BitMidiSearchView extends JPanel
     {
         searchButton.setEnabled(!searching);
         queryField.setEnabled(!searching);
+        resultsList.setEnabled(!searching);
+        loadButton.setEnabled(!searching && resultsList.getSelectedValue() != null);
         if (searching)
         {
             previousButton.setEnabled(false);
