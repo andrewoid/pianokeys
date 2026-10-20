@@ -63,7 +63,8 @@ public class BitMidiService
                         result.name() == null ? "" : result.name(),
                         resolveUrl(baseUri, result.url()),
                         resolveUrl(baseUri, result.downloadUrl())))
-                .filter(track -> !track.title().isBlank() && !track.pageUrl().isBlank() && !track.downloadUrl().isBlank())
+                .filter(track -> !track.title().isBlank() && !track.pageUrl().isBlank() &&
+                        !track.downloadUrl().isBlank())
                 .toList();
     }
 
