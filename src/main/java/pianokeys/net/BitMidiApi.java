@@ -9,8 +9,10 @@ import retrofit2.http.Url;
 
 interface BitMidiApi
 {
+    // BitMidi's JSON search endpoint is 0-based: page=0 is the first page.
+    // BitMidiService converts from the app's 1-based page numbers before calling here.
     @GET("search")
-    Single<BitMidiSearchResponse> search(@Query("q") String query, @Query("page") int page);
+    Single<BitMidiSearchEnvelope> search(@Query("q") String query, @Query("page") int page);
 
     @Streaming
     @GET

@@ -29,7 +29,16 @@ public class BitMidiService
         if (page < 1) {
             return Single.error(new IllegalArgumentException("page must be positive"));
         }
-        return api.search(query, page)
+        // Public app/UI pages are 1-based, but BitMidi's JSON endpoint is 0-based.
+        int apiPage = page - 1;
+        return api.search(query, apiPage)
+                .map(response -> {
+                    // BitMidi wraps the actual payload in a top-level "result" object.
+                    if (response == null || response.result() == null) {
+                        throw new IllegalStateException("BitMidi search response is missing results");
+                    }
+                    return response.result();
+                })
                 .map(response -> parseSearchResponse(response, baseUrl));
     }
 

@@ -27,10 +27,10 @@ class BitMidiServiceTest
     {
         BitMidiApi api = new BitMidiApi() {
             @Override
-            public Single<BitMidiSearchResponse> search(String query, int page) {
-                return Single.just(new BitMidiSearchResponse(List.of(
+            public Single<BitMidiSearchEnvelope> search(String query, int page) {
+                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of(
                         new BitMidiSearchResult("1", "Mario.mid", "mario-mid", List.of(), 1L, 1L,
-                                "", "", "/mario-mid", "/midi/mario.mid"))));
+                                "", "", "/mario-mid", "/midi/mario.mid")))));
             }
 
             @Override
@@ -48,12 +48,32 @@ class BitMidiServiceTest
     }
 
     @Test
+    void searchAppliesZeroBasedApiPaging() {
+        BitMidiApi api = new BitMidiApi() {
+            @Override
+            public Single<BitMidiSearchEnvelope> search(String query, int page) {
+                assertEquals("mario", query);
+                assertEquals(0, page);
+                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of())));
+            }
+
+            @Override
+            public Single<ResponseBody> download(String url) {
+                return Single.just(ResponseBody.create(null, new byte[] {0x4d, 0x54, 0x68, 0x64}));
+            }
+        };
+        BitMidiService jsonService = new BitMidiService(api, "https://bitmidi.com/");
+
+        jsonService.search("mario", 1).blockingGet();
+    }
+
+    @Test
     void downloadReturnsMidiBytes() throws Exception
     {
         BitMidiApi api = new BitMidiApi() {
             @Override
-            public Single<BitMidiSearchResponse> search(String query, int page) {
-                return Single.just(new BitMidiSearchResponse(List.of()));
+            public Single<BitMidiSearchEnvelope> search(String query, int page) {
+                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of())));
             }
 
             @Override
