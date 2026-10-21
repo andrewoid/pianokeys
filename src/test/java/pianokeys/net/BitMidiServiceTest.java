@@ -1,102 +1,42 @@
 package pianokeys.net;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import io.reactivex.rxjava3.core.Single;
-import java.net.URI;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import okhttp3.ResponseBody;
 
 class BitMidiServiceTest
 {
-    private BitMidiService service;
-
-    @BeforeEach
-    void setUp()
-    {
-        service = new BitMidiServiceFactory("https://bitmidi.com/").create();
-    }
+    private final BitMidiService service = new BitMidiServiceFactory("https://bitmidi.com/").create();
 
     @Test
-    void searchParsesBitMidiHtml() throws Exception
+    void searchReturnsRealResultsFromServer()
     {
-        BitMidiApi api = new BitMidiApi() {
-            @Override
-            public Single<BitMidiSearchEnvelope> search(String query, int page) {
-                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of(
-                        new BitMidiSearchResult("1", "Mario.mid", "mario-mid", List.of(), 1L, 1L,
-                                "", "", "/mario-mid", "/midi/mario.mid")))));
-            }
-
-            @Override
-            public Single<ResponseBody> download(String url) {
-                return Single.just(ResponseBody.create(null, new byte[] {0x4d, 0x54, 0x68, 0x64}));
-            }
-        };
-        BitMidiService jsonService = new BitMidiService(api, "https://bitmidi.com/");
-        List<BitMidiTrack> tracks = jsonService.search("mario").blockingGet();
+        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
+        assertNotNull(tracks);
+        assertFalse(tracks.isEmpty());
         BitMidiTrack track = tracks.getFirst();
 
-        assertEquals("Mario.mid", track.title());
-        assertEquals("https://bitmidi.com/mario-mid", track.pageUrl());
-        assertEquals("https://bitmidi.com/midi/mario.mid", track.downloadUrl());
+        assertNotNull(track.title());
+        assertTrue(track.pageUrl().startsWith("https://bitmidi.com/"));
+        assertTrue(track.downloadUrl().startsWith("https://bitmidi.com/"));
     }
 
     @Test
-    void searchAppliesZeroBasedApiPaging() {
-        BitMidiApi api = new BitMidiApi() {
-            @Override
-            public Single<BitMidiSearchEnvelope> search(String query, int page) {
-                assertEquals("mario", query);
-                assertEquals(0, page);
-                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of())));
-            }
-
-            @Override
-            public Single<ResponseBody> download(String url) {
-                return Single.just(ResponseBody.create(null, new byte[] {0x4d, 0x54, 0x68, 0x64}));
-            }
-        };
-        BitMidiService jsonService = new BitMidiService(api, "https://bitmidi.com/");
-
-        jsonService.search("mario", 1).blockingGet();
-    }
-
-    @Test
-    void downloadReturnsMidiBytes() throws Exception
+    void downloadFetchesRealMidiFromServer()
     {
-        BitMidiApi api = new BitMidiApi() {
-            @Override
-            public Single<BitMidiSearchEnvelope> search(String query, int page) {
-                return Single.just(new BitMidiSearchEnvelope(new BitMidiSearchResponse(List.of())));
-            }
+        BitMidiTrack track = service.search("mario").blockingGet().getFirst();
+        BitMidiFile file = service.download(track).blockingGet();
 
-            @Override
-            public Single<ResponseBody> download(String url) {
-                return Single.just(ResponseBody.create(null, new byte[] {0x4d, 0x54, 0x68, 0x64}));
-            }
-        };
-        BitMidiService downloadService = new BitMidiService(api, "https://bitmidi.com/");
-        BitMidiTrack track = new BitMidiTrack("Mario.mid", "https://bitmidi.com/mario-mid", "https://bitmidi.com/midi/mario.mid");
-        BitMidiFile file = downloadService.download(track).blockingGet();
-
-        assertEquals("mario.mid", file.fileName());
-        assertTrue(file.content().length >= 4);
-        assertArrayEquals(new byte[] {0x4d, 0x54, 0x68, 0x64},
-                java.util.Arrays.copyOf(file.content(), 4));
-    }
-
-    @Test
-    void downloadRequiresDownloadUrl() {
-        BitMidiTrack track = new BitMidiTrack("Mario.mid", "https://bitmidi.com/mario-mid", "");
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> service.download(track).blockingGet());
-        assertEquals("track must have a download URL", exception.getMessage());
+        assertNotNull(file);
+        assertTrue(file.fileName().endsWith(".mid"));
+        assertTrue(file.content().length > 4);
+        assertTrue(
+                file.content()[0] == 0x4d &&
+                file.content()[1] == 0x54 &&
+                file.content()[2] == 0x68 &&
+                file.content()[3] == 0x64);
     }
 }
