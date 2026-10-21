@@ -81,9 +81,7 @@ public class PianoGui extends JFrame
             {
                 play.setIcon(new ImageIcon(
                         getClass().getResource("/images/pause.jpeg")));
-            }
-            else
-            {
+            } else {
                 controller.stopComposition();
                 play.setIcon(new ImageIcon(
                         getClass().getResource("/images/play.png")));
