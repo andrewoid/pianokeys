@@ -123,8 +123,7 @@ public class PianoGui extends JFrame
         buttonPanel.add(instrumentDropdown);
 
         // SPEED CONTROL
-        JPanel speedPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-
+        final JPanel speedPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JLabel speedLabel = new JLabel("Speed: 1.0x");
 
         JSlider speedSlider = new JSlider(50, 200, 100);
@@ -185,8 +184,7 @@ public class PianoGui extends JFrame
 
             sound = new PianoSound(
                     synthesizer, channels[0], channels[1]);
-        }
-        catch (MidiUnavailableException e)
+        } catch (MidiUnavailableException e)
         {
             e.printStackTrace();
         }

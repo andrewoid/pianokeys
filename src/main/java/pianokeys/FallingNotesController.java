@@ -29,9 +29,15 @@ public class FallingNotesController
     // 1.0 means normal speed
     private double playbackSpeed = 1.0;
 
-    private Consumer<Note> noteHitListener = note -> { };
-    private Consumer<Note> noteEndListener = note -> { };
-    private Runnable finishedListener = () -> { };
+    private Consumer<Note> noteHitListener = note ->
+    {
+    };
+    private Consumer<Note> noteEndListener = note ->
+    {
+    };
+    private Runnable finishedListener = () ->
+    {
+    };
 
     public FallingNotesController(Composition composition)
     {
