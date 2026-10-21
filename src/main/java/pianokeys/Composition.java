@@ -1,6 +1,7 @@
 package pianokeys;
 
 import javax.sound.midi.*;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -37,6 +38,23 @@ public class Composition
         } catch (IOException | InvalidMidiDataException e)
         {
             throw new IllegalStateException("Unable to load MIDI resource " + resourceName, e);
+        }
+    }
+
+    /**
+     * Loads a saved recording (or any standard MIDI file) from disk, as opposed to
+     * fromMidiResource, which only loads files bundled on the classpath.
+     */
+    public Composition fromMidiFile(File file)
+    {
+        Composition composition = new Composition(file.getName());
+        try
+        {
+            composition.addNotes(readNotes(MidiSystem.getSequence(file)));
+            return composition;
+        } catch (IOException | InvalidMidiDataException e)
+        {
+            throw new IllegalStateException("Unable to load MIDI file " + file, e);
         }
     }
 

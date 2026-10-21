@@ -21,10 +21,10 @@ class CompositionRunnableTest
         runnable.run();
 
         //then
-        verify(controller).playNote(60);
-        verify(controller, atLeastOnce()).stopNote(60);
-        verify(controller).playNote(62);
-        verify(controller, atLeastOnce()).stopNote(62);
+        verify(controller).playPlaybackNote(60);
+        verify(controller, atLeastOnce()).stopPlaybackNote(60);
+        verify(controller).playPlaybackNote(62);
+        verify(controller, atLeastOnce()).stopPlaybackNote(62);
     }
 
 }

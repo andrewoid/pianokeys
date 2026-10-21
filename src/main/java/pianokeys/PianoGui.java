@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.function.Supplier;
 
 public class PianoGui extends JFrame
@@ -103,9 +104,29 @@ public class PianoGui extends JFrame
                 controller.changeInstrument((String) instrumentDropdown.getSelectedItem()));
         buttonPanel.add(instrumentDropdown);
 
-        JButton bitMidiSearch = new JButton("Search BitMidi");
+        JButton bitMidiSearch = new JButton("MIDI Library");
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
+
+        JButton record = new JButton(new ImageIcon(getClass().getResource("/images/record.png")));
+        record.setToolTipText("Click to start recording what you play");
+        record.addActionListener(e ->
+        {
+            if (controller.isCapturingRecording())
+            {
+                File saved = controller.stopRecordingAndSave();
+                record.setBackground(null);
+                record.setToolTipText(saved != null
+                        ? "Saved as " + saved.getName() + " - click to record again"
+                        : "Click to start recording what you play");
+            } else
+            {
+                controller.startRecording();
+                record.setBackground(Color.RED);
+                record.setToolTipText("Recording - click to stop and save");
+            }
+        });
+        buttonPanel.add(record);
 
         topPanel.add(buttonPanel, BorderLayout.SOUTH);
         contentPanel.add(topPanel, BorderLayout.NORTH);
@@ -186,7 +207,7 @@ public class PianoGui extends JFrame
     {
         if (bitMidiSearchGui == null)
         {
-            bitMidiSearchGui = new BitMidiSearchGui();
+            bitMidiSearchGui = new BitMidiSearchGui(() -> controller);
             bitMidiSearchGui.setLocationRelativeTo(this);
         }
         bitMidiSearchGui.setVisible(true);
