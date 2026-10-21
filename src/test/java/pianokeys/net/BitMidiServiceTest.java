@@ -20,8 +20,11 @@ class BitMidiServiceTest
         BitMidiTrack track = tracks.getFirst();
 
         assertNotNull(track.title());
+        assertTrue(track.title().toLowerCase().contains("mario"));
         assertTrue(track.pageUrl().startsWith("https://bitmidi.com/"));
+        assertTrue(!"https://bitmidi.com/".equals(track.pageUrl()));
         assertTrue(track.downloadUrl().startsWith("https://bitmidi.com/"));
+        assertTrue(!"https://bitmidi.com/".equals(track.downloadUrl()));
     }
 
     @Test
@@ -29,14 +32,16 @@ class BitMidiServiceTest
     {
         BitMidiTrack track = service.search("mario").blockingGet().getFirst();
         BitMidiFile file = service.download(track).blockingGet();
+        byte[] content = file.content();
 
         assertNotNull(file);
         assertTrue(file.fileName().endsWith(".mid"));
-        assertTrue(file.content().length > 4);
+        assertTrue(content.length > 4);
+        // 0x4d 0x54 0x68 0x64 are ASCII bytes for the MIDI header chunk magic "MThd".
         assertTrue(
-                file.content()[0] == 0x4d &&
-                file.content()[1] == 0x54 &&
-                file.content()[2] == 0x68 &&
-                file.content()[3] == 0x64);
+                content[0] == 0x4d
+                        && content[1] == 0x54
+                        && content[2] == 0x68
+                        && content[3] == 0x64);
     }
 }
