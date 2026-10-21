@@ -248,7 +248,7 @@ public class FallingNotesController
     public void seekTo(double timeSeconds)
     {
         // Stop whatever was ringing at the old position.
-        for (Note note : new HashSet<>(soundingNotes))
+        for (Note note : soundingNotes)
         {
             noteEndListener.accept(note);
         }
