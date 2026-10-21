@@ -103,6 +103,20 @@ public class PianoGui extends JFrame
                 controller.changeInstrument((String) instrumentDropdown.getSelectedItem()));
         buttonPanel.add(instrumentDropdown);
 
+        // Keep the label and slider synchronized so the current percentage is visible.
+        JLabel volumeLabel = new JLabel("Volume: 100%");
+        JSlider volumeSlider = new JSlider(JSlider.HORIZONTAL, 0, 100, sound.getVolume());
+        volumeSlider.setPreferredSize(new Dimension(180, volumeSlider.getPreferredSize().height));
+        volumeSlider.addChangeListener(e ->
+        {
+            int volume = volumeSlider.getValue();
+            // Apply changes immediately to both live notes and song playback.
+            sound.setVolume(volume);
+            volumeLabel.setText("Volume: " + volume + "%");
+        });
+        buttonPanel.add(volumeLabel);
+        buttonPanel.add(volumeSlider);
+
         JButton bitMidiSearch = new JButton("Search BitMidi");
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
