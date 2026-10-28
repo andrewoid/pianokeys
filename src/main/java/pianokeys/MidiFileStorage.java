@@ -60,6 +60,8 @@ public class MidiFileStorage
 
     private MidiEvent tempoEvent() throws InvalidMidiDataException
     {
+        // The MIDI format requires the tempo as exactly 3 big-endian bytes (a 24-bit value),
+        // so each byte is sliced out of the 32-bit int via shifting and masking with 0xFF.
         byte[] data = {
                 (byte) ((MICROSECONDS_PER_QUARTER_NOTE >> 16) & 0xFF),
                 (byte) ((MICROSECONDS_PER_QUARTER_NOTE >> 8) & 0xFF),
