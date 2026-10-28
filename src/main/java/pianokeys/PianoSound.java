@@ -26,6 +26,9 @@ public class PianoSound
     private final Synthesizer synthesizer;
     private final MidiChannel channel;
     private final MidiChannel songChannel;
+    // Keep the UI's percentage range separate from MIDI's 0-127 volume range.
+    private final int maximumVolume = 100;
+    private int volume = maximumVolume;
 
     public final int[] whiteNotes = {c4, d4, e4, f4, g4, a4, b4, c5};
     public final int[] blackNotes = {c4Sharp, d4Sharp, -1, f4Sharp, g4Sharp, a4Sharp, -1};
@@ -33,6 +36,7 @@ public class PianoSound
 
     public PianoSound(Synthesizer synthesizer, MidiChannel channel) throws MidiUnavailableException
     {
+        // Use the same channel when live notes and songs do not need separate routing.
         this(synthesizer, channel, channel);
     }
 
@@ -72,6 +76,21 @@ public class PianoSound
     public void stopSongNote(int note)
     {
         songChannel.noteOff(note);
+    }
+
+    public void setVolume(int volume)
+    {
+        // Clamp invalid UI or programmatic values before converting them for MIDI.
+        this.volume = Math.max(0, Math.min(maximumVolume, volume));
+        int midiVolume = Math.round(this.volume * 127.0f / maximumVolume);
+        // MIDI controller 7 is the channel-volume control.
+        channel.controlChange(7, midiVolume);
+        songChannel.controlChange(7, midiVolume);
+    }
+
+    public int getVolume()
+    {
+        return volume;
     }
 
     public void silenceSong()

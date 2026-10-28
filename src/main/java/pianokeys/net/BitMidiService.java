@@ -2,7 +2,9 @@ package pianokeys.net;
 
 import io.reactivex.rxjava3.core.Single;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import okhttp3.ResponseBody;
 
 public class BitMidiService
@@ -27,39 +29,43 @@ public class BitMidiService
         if (page < 1) {
             return Single.error(new IllegalArgumentException("page must be positive"));
         }
-        return api.search(query, page)
+        // Public app/UI pages are 1-based, but BitMidi's JSON endpoint is 0-based.
+        int apiPage = page - 1;
+        return api.search(query, apiPage)
+                .map(response -> {
+                    // BitMidi wraps the actual payload in a top-level "result" object.
+                    if (response == null || response.result() == null) {
+                        throw new IllegalStateException("BitMidi search response is missing results");
+                    }
+                    return response.result();
+                })
                 .map(response -> parseSearchResponse(response, baseUrl));
     }
 
     public Single<BitMidiFile> download(BitMidiTrack track)
     {
-        if (track == null || track.pageUrl().isBlank()) {
-            return Single.error(new IllegalArgumentException("track must have a page URL"));
+        if (track == null || track.downloadUrl().isBlank()) {
+            return Single.error(new IllegalArgumentException("track must have a download URL"));
         }
-        BitMidiHtmlParser htmlParser = new BitMidiHtmlParser();
-        Single<String> downloadUrl;
-        if (track.downloadUrl().isBlank()) {
-            downloadUrl = api.page(track.pageUrl())
-                    .map(this::readHtml)
-                    .map(html -> htmlParser.downloadUrl(html, track.pageUrl()));
-        } else {
-            downloadUrl = Single.just(track.downloadUrl());
-        }
-        return downloadUrl.flatMap(url -> {
-            if (url.isBlank()) {
-                return Single.error(new IllegalArgumentException("BitMidi page has no MIDI download"));
-            }
-            return api.download(url).map(response ->
-                    new BitMidiFile(fileName(url, track), readBytes(response).clone()));
-        });
+        String downloadUrl = track.downloadUrl();
+        return api.download(downloadUrl).map(response ->
+                new BitMidiFile(fileName(downloadUrl, track), readBytes(response).clone()));
     }
 
-    private List<BitMidiTrack> parseSearchResponse(ResponseBody response, String baseUrl) {
-        try (response) {
-            return new BitMidiHtmlParser().searchResults(response.string(), baseUrl);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to read BitMidi search response", exception);
+    private List<BitMidiTrack> parseSearchResponse(BitMidiSearchResponse response, String baseUrl) {
+        if (response == null || response.results() == null) {
+            throw new IllegalStateException("BitMidi search response is missing results");
         }
+        URI baseUri = URI.create(baseUrl);
+        return response.results().stream()
+                .filter(Objects::nonNull)
+                .map(result -> new BitMidiTrack(
+                        result.name() == null ? "" : result.name(),
+                        resolveUrl(baseUri, result.url()),
+                        resolveUrl(baseUri, result.downloadUrl())))
+                .filter(track -> !track.title().isBlank() && !track.pageUrl().isBlank()
+                        && !track.downloadUrl().isBlank())
+                .toList();
     }
 
     private byte[] readBytes(ResponseBody response) {
@@ -70,15 +76,17 @@ public class BitMidiService
         }
     }
 
-    private String readHtml(ResponseBody response) {
-        try (response) {
-            return response.string();
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to read BitMidi page", exception);
-        }
+    private String fileName(String downloadUrl, BitMidiTrack track) {
+        String path = URI.create(downloadUrl).getPath();
+        int slash = path.lastIndexOf('/');
+        String fileName = slash >= 0 ? path.substring(slash + 1) : path;
+        return fileName.isBlank() ? track.title() : fileName;
     }
 
-    private String fileName(String downloadUrl, BitMidiTrack track) {
-        return new BitMidiHtmlParser().fileName(new BitMidiTrack(track.title(), track.pageUrl(), downloadUrl));
+    private String resolveUrl(URI baseUri, String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return baseUri.resolve(value).toString();
     }
 }

@@ -41,6 +41,30 @@ class PianoSoundTest
     }
 
     @Test
+    void setVolumeUpdatesLiveAndSongChannels() throws MidiUnavailableException
+    {
+        MidiChannel songChannel = mock();
+        PianoSound piano = new PianoSound(synthesizer, channel, songChannel);
+
+        piano.setVolume(50);
+
+        verify(channel).controlChange(7, 64);
+        verify(songChannel).controlChange(7, 64);
+    }
+
+    @Test
+    void setVolumeClampsToMidiRange() throws MidiUnavailableException
+    {
+        MidiChannel songChannel = mock();
+        PianoSound piano = new PianoSound(synthesizer, channel, songChannel);
+
+        piano.setVolume(150);
+
+        verify(channel).controlChange(7, 127);
+        verify(songChannel).controlChange(7, 127);
+    }
+
+    @Test
     void cleanup() throws MidiUnavailableException
     {
         // given

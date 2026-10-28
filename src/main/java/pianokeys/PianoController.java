@@ -178,4 +178,12 @@ public class PianoController
     {
         compositionView.setCurrentTime(time);
     }
+
+    public void setPlaybackSpeed(double speed)
+    {
+        if (fallingNotesController != null)
+        {
+            fallingNotesController.setPlaybackSpeed(speed);
+        }
+    }
 }
