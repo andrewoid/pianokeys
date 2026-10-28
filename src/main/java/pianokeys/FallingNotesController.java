@@ -124,6 +124,22 @@ public class FallingNotesController
         }
     }
 
+    /**
+     * Replaces the falling notes with a new song and goes back to the start
+     *
+     * @param song the song to show
+     */
+    public void loadComposition(Composition song)
+    {
+        reset();
+        composition.getNoteList().clear();
+        composition.addNotes(song.getNoteList());
+        visualHeights.clear();
+        calculateVisualHeights();
+        view.repaint();
+    }
+
+
     public FallingNotesView getView()
     {
         return view;

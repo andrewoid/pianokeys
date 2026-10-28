@@ -111,6 +111,27 @@ public class PianoController
         }
     }
 
+    /**
+     * Stops the current song and replaces it with a new one, like a song from BitMidi
+     *
+     * @param song the song to show
+     */
+    public void loadComposition(Composition song)
+    {
+        stopComposition();
+        if (fallingNotesController != null)
+        {
+            fallingNotesController.loadComposition(song);
+        } else
+        {
+            composition.getNoteList().clear();
+            composition.addNotes(song.getNoteList());
+        }
+        recorder.reset();
+        compositionView.setCurrentTime(0);
+        compositionView.refreshLayout();
+    }
+
     //resets the composition playback to the beginning
     public void restartComposition()
     {
