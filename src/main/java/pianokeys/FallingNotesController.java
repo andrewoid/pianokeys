@@ -353,7 +353,7 @@ public class FallingNotesController
 
         if (wasRunning)
         {
-            // getElapsedTime() already adds elapsedBeforePause; only reset this segment's clock.
+            // Adjust the clock so the next update() continues from the seeked time.
             startedAt = System.nanoTime();
         }
 
