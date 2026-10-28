@@ -30,8 +30,9 @@ public class PianoGui extends JFrame
 
     private PianoController controller;
 
-    // window for searching BitMidi, created the first time it is opened
+    // windows for searching BitMidi and browsing saved recordings, each created the first time it is opened
     private BitMidiSearchGui bitMidiSearchGui;
+    private RecordingsGui recordingsGui;
 
     public PianoGui()
     {
@@ -104,9 +105,13 @@ public class PianoGui extends JFrame
                 controller.changeInstrument((String) instrumentDropdown.getSelectedItem()));
         buttonPanel.add(instrumentDropdown);
 
-        JButton bitMidiSearch = new JButton("MIDI Library");
+        JButton bitMidiSearch = new JButton("Search BitMidi");
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
+
+        JButton recordings = new JButton("My Recordings");
+        recordings.addActionListener(e -> openRecordings());
+        buttonPanel.add(recordings);
 
         JButton record = new JButton(new ImageIcon(getClass().getResource("/images/record.png")));
         record.setToolTipText("Click to start recording what you play");
@@ -207,10 +212,21 @@ public class PianoGui extends JFrame
     {
         if (bitMidiSearchGui == null)
         {
-            bitMidiSearchGui = new BitMidiSearchGui(() -> controller);
+            bitMidiSearchGui = new BitMidiSearchGui();
             bitMidiSearchGui.setLocationRelativeTo(this);
         }
         bitMidiSearchGui.setVisible(true);
         bitMidiSearchGui.toFront();
+    }
+
+    private void openRecordings()
+    {
+        if (recordingsGui == null)
+        {
+            recordingsGui = new RecordingsGui(() -> controller);
+            recordingsGui.setLocationRelativeTo(this);
+        }
+        recordingsGui.setVisible(true);
+        recordingsGui.toFront();
     }
 }
