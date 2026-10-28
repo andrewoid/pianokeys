@@ -21,6 +21,8 @@ public class PianoGui extends JFrame
 
     private static final int HOME_OCTAVE_INDEX = 3;
 
+    private static final Font TIME_LABEL_FONT = new Font("Arial", Font.PLAIN, 14);
+
     private PianoSound sound;
     private PianoController controller;
     private BitMidiSearchGui bitMidiSearchGui;
@@ -70,7 +72,6 @@ public class PianoGui extends JFrame
         compositionScrollPane.setPreferredSize(new Dimension(800, 200));
 
         FallingNotesView fallingNotesView = fallingNotesController.getView();
-        contentPanel.add(fallingNotesView, BorderLayout.CENTER);
 
         JButton play = new JButton(
                 new ImageIcon(getClass().getResource("/images/play.png")));
@@ -161,18 +162,69 @@ public class PianoGui extends JFrame
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
 
-        topPanel.add(buttonPanel, BorderLayout.SOUTH);
+        topPanel.add(buttonPanel, BorderLayout.CENTER);
         contentPanel.add(topPanel, BorderLayout.NORTH);
 
-        fallingNotesController.setFinishedListener(() ->
-                play.setIcon(new ImageIcon(
-                        getClass().getResource("/images/play.png"))));
+        // Scrubber (progress bar): drag up/down to jump earlier or later in the song,
+        // the same way you scrub a video or music player. Labels show "how far in" / "total length".
+        double songDuration = Math.max(composition.duration(), 0.001);
+        // JSlider uses integers; store thousandths of a second for smoother dragging.
+        int sliderMax = Math.max(1, (int) Math.round(songDuration * 1000));
+        JLabel currentTimeLabel = new JLabel(formatTime(0), SwingConstants.CENTER);
+        JLabel durationLabel = new JLabel(formatTime(songDuration), SwingConstants.CENTER);
+        currentTimeLabel.setFont(TIME_LABEL_FONT);
+        durationLabel.setFont(TIME_LABEL_FONT);
+        // Vertical slider: bottom = start of song, top = end (Swing default).
+        JSlider seekSlider = new JSlider(JSlider.VERTICAL, 0, sliderMax, 0);
+        seekSlider.setPaintTrack(true);
+        seekSlider.setPaintTicks(false);
+        // When true, the slider is being updated by playback — ignore that as a user drag.
+        final boolean[] updatingSlider = {false};
+        seekSlider.addChangeListener(e ->
+        {
+            if (updatingSlider[0])
+            {
+                return;
+            }
+            // Convert slider units back to seconds, then jump sound + tiles to that spot.
+            double seekSeconds = seekSlider.getValue() / 1000.0;
+            currentTimeLabel.setText(formatTime(seekSeconds));
+            controller.seekTo(seekSeconds);
+        });
+        // While the song plays, keep the thumb and "current time" label moving automatically.
+        fallingNotesController.setTimeListener(timeSeconds ->
+                SwingUtilities.invokeLater(() ->
+                {
+                    updatingSlider[0] = true;
+                    seekSlider.setValue((int) Math.round(timeSeconds * 1000));
+                    currentTimeLabel.setText(formatTime(timeSeconds));
+                    updatingSlider[0] = false;
+                }));
 
+        JPanel scrubberPanel = new JPanel(new BorderLayout(0, 8));
+        scrubberPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 12));
+        scrubberPanel.add(durationLabel, BorderLayout.NORTH);
+        scrubberPanel.add(seekSlider, BorderLayout.CENTER);
+        scrubberPanel.add(currentTimeLabel, BorderLayout.SOUTH);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(fallingNotesView, BorderLayout.CENTER);
+        centerPanel.add(scrubberPanel, BorderLayout.EAST);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
+        fallingNotesController.addFinishedListener(() ->
+                play.setIcon(new ImageIcon(getClass().getResource("/images/play.png"))));
         contentPanel.revalidate();
         contentPanel.repaint();
 
         centerOnOctave(
                 pianoScrollPane, pianoView, HOME_OCTAVE_INDEX);
+    }
+
+    /** Formats seconds as m:ss (for example, 75 seconds -> "1:15"). */
+    private static String formatTime(double seconds)
+    {
+        int totalSeconds = (int) Math.floor(Math.max(0, seconds));
+        return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
     }
 
     private void setUpFrame()
