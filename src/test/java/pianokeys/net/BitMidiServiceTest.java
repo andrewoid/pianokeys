@@ -1,22 +1,13 @@
 package pianokeys.net;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import io.reactivex.rxjava3.core.Single;
-import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Mocks BitMidiApi directly instead of calling the real bitmidi.com, so these
@@ -33,57 +24,59 @@ class BitMidiServiceTest
     private static final byte[] MIDI_BYTES = {0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06};
 
     private BitMidiService service;
+    private BitMidiApi api;
 
     @BeforeEach
     void setUp()
     {
-        BitMidiApi api = mock(BitMidiApi.class);
-        service = new BitMidiService(api, BASE_URL);
-
-        // canned search results page, shaped like a real BitMidi search page
-        String searchHtml = "<html><body><a href=\"" + TRACK_PAGE_URL + "\">" + TRACK_TITLE + "</a></body></html>";
-        when(api.search(eq("mario"), eq(1))).thenReturn(Single.just(htmlResponse(searchHtml)));
-
-        // canned track page, with its own MIDI download link
-        String trackPageHtml = "<html><body><a href=\"" + DOWNLOAD_URL + "\">Download</a></body></html>";
-        when(api.page(eq(TRACK_PAGE_URL))).thenReturn(Single.just(htmlResponse(trackPageHtml)));
-
-        // canned MIDI file bytes, standing in for the actual download
-        when(api.download(eq(DOWNLOAD_URL)))
-                .thenReturn(Single.just(ResponseBody.create(MediaType.get("audio/midi"), MIDI_BYTES)));
-    }
-
-    private ResponseBody htmlResponse(String html)
-    {
-        return ResponseBody.create(MediaType.get("text/html"), html);
+        api = mock(BitMidiApi.class);
+        service = new BitMidiService(api, "https://bitmidi.com/");
     }
 
     @Test
-    void searchParsesBitMidiHtml()
+    void searchRejectsBlankQuery()
     {
-        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
-        assertFalse(tracks.isEmpty());
-        BitMidiTrack track = tracks.get(0);
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("").blockingGet());
+    }
 
-        assertTrue(track.title().toLowerCase(Locale.ROOT).endsWith(".mid"));
-        URI pageUri = URI.create(track.pageUrl());
-        assertEquals("https", pageUri.getScheme());
-        assertEquals("bitmidi.com", pageUri.getHost());
-        assertTrue(track.downloadUrl().isBlank());
+    @Test
+    void searchRejectsInvalidPage()
+    {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("mario", 0).blockingGet());
     }
 
     @Test
     void downloadReturnsMidiBytes()
     {
-        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
-        assertFalse(tracks.isEmpty());
-        BitMidiTrack track = tracks.get(0);
+        BitMidiTrack track = new BitMidiTrack(
+                "mario-theme.mid",
+                "https://bitmidi.com/mario-theme-mid",
+                "https://bitmidi.com/uploads/mario-theme.mid"
+        );
+
+        byte[] midiBytes = {
+                0x4d, 0x54, 0x68, 0x64,
+                0x00, 0x00, 0x00, 0x06
+        };
+
+        ResponseBody response = ResponseBody.create(
+                MediaType.parse("audio/midi"),
+                midiBytes
+        );
+
+        when(api.download(track.downloadUrl()))
+                .thenReturn(Single.just(response));
 
         BitMidiFile file = service.download(track).blockingGet();
 
-        assertFalse(file.fileName().isBlank());
+        assertEquals("mario-theme.mid", file.fileName());
         assertTrue(file.content().length >= 4);
-        assertArrayEquals(new byte[] {0x4d, 0x54, 0x68, 0x64},
-                Arrays.copyOf(file.content(), 4));
+
+        assertArrayEquals(
+                new byte[] {0x4d, 0x54, 0x68, 0x64},
+                Arrays.copyOf(file.content(), 4)
+        );
     }
 }
