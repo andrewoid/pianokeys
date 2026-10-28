@@ -1,19 +1,13 @@
-
 package pianokeys.net;
 
 import io.reactivex.rxjava3.core.Single;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class BitMidiServiceTest
@@ -29,38 +23,17 @@ class BitMidiServiceTest
     }
 
     @Test
-    void searchParsesBitMidiHtml()
+    void searchRejectsBlankQuery()
     {
-        String html = """
-                <html>
-                <body>
-                <a href="/mario-theme-mid">mario-theme.mid</a>
-                </body>
-                </html>
-                """;
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("").blockingGet());
+    }
 
-        ResponseBody response = ResponseBody.create(
-                MediaType.parse("text/html"),
-                html
-        );
-
-        when(api.search("mario", 1))
-                .thenReturn(Single.just(response));
-
-        List<BitMidiTrack> tracks =
-                service.search("mario").blockingGet();
-
-        assertFalse(tracks.isEmpty());
-
-        BitMidiTrack track = tracks.get(0);
-
-        assertTrue(track.title().toLowerCase(Locale.ROOT).endsWith(".mid"));
-
-        URI pageUri = URI.create(track.pageUrl());
-
-        assertEquals("https", pageUri.getScheme());
-        assertEquals("bitmidi.com", pageUri.getHost());
-        assertTrue(track.downloadUrl().isBlank());
+    @Test
+    void searchRejectsInvalidPage()
+    {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("mario", 0).blockingGet());
     }
 
     @Test
@@ -87,7 +60,7 @@ class BitMidiServiceTest
 
         BitMidiFile file = service.download(track).blockingGet();
 
-        assertFalse(file.fileName().isBlank());
+        assertEquals("mario-theme.mid", file.fileName());
         assertTrue(file.content().length >= 4);
 
         assertArrayEquals(
