@@ -1,5 +1,9 @@
 package pianokeys;
 
+import javax.sound.midi.InvalidMidiDataException;
+import java.io.File;
+import java.io.IOException;
+
 public class PianoController
 {
     private final CompositionView compositionView;
@@ -7,10 +11,19 @@ public class PianoController
     private final Composition composition;
     private final PianoView pianoView;
     private final Recorder recorder;
+    private final MidiFileStorage midiFileStorage = new MidiFileStorage();
     private FallingNotesController fallingNotesController;
     private CompositionRunnable runnable;
 
     private boolean recording = true;
+
+    // A dedicated recording session started/stopped by the record button, independent of
+    // the "recording" flag above (which belongs to the falling-notes feature's own
+    // composition). Writes into its own fresh Composition rather than whatever song is
+    // currently loaded, so a user's own playing never gets mixed into that song's data.
+    private boolean capturingRecording = false;
+    private Composition activeRecordingComposition;
+    private Recorder activeRecorder;
 
     public PianoController(CompositionView compositionView,
                            PianoSound sound,
@@ -43,6 +56,10 @@ public class PianoController
         {
             recorder.startNote(note);
         }
+        if (capturingRecording)
+        {
+            activeRecorder.startNote(note);
+        }
     }
 
     /**
@@ -60,6 +77,28 @@ public class PianoController
             compositionView.setCurrentTime(recorder.getCompositionTimeSeconds());
             compositionView.refreshLayout();
         }
+        if (capturingRecording)
+        {
+            activeRecorder.stopNote();
+        }
+    }
+
+    /**
+     * Plays a note as part of automated composition playback (CompositionRunnable),
+     * as opposed to a note the user actually pressed. Does the same sound/visual work as
+     * playNote, but never feeds into an active recording session - a note the app itself
+     * is auto-playing was never something the user played.
+     */
+    public void playPlaybackNote(int note)
+    {
+        sound.playNote(note);
+        pianoView.showKeyPlayed(note, true);
+    }
+
+    public void stopPlaybackNote(int note)
+    {
+        sound.stopNote(note);
+        pianoView.showKeyPlayed(note, false);
     }
 
     /**
@@ -139,6 +178,46 @@ public class PianoController
             fallingNotesController.reset();
             sound.silenceSong();
             fallingNotesController.start();
+        }
+    }
+
+    public boolean isCapturingRecording()
+    {
+        return capturingRecording;
+    }
+
+    /**
+     * Starts a new recording session: notes played from now on (regardless of whether a
+     * song is currently playing via the falling-notes feature) get captured into a fresh
+     * Composition, separate from whatever song is currently loaded.
+     */
+    public void startRecording()
+    {
+        activeRecordingComposition = new Composition();
+        activeRecorder = new Recorder(activeRecordingComposition);
+        capturingRecording = true;
+    }
+
+    /**
+     * Stops the current recording session and saves everything captured since
+     * startRecording() as a .mid file under the user's home directory.
+     *
+     * @return the saved file, or null if nothing was captured or saving failed
+     */
+    public File stopRecordingAndSave()
+    {
+        capturingRecording = false;
+        if (activeRecordingComposition == null)
+        {
+            return null;
+        }
+        try
+        {
+            return midiFileStorage.save(activeRecordingComposition);
+        } catch (IOException | InvalidMidiDataException e)
+        {
+            e.printStackTrace();
+            return null;
         }
     }
 

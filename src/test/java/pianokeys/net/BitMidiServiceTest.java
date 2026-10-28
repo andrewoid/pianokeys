@@ -6,12 +6,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Mocks BitMidiApi directly instead of calling the real bitmidi.com, so these
+ * tests are deterministic and don't depend on that site being up/reachable
+ * from wherever they run. Still exercises the real parsing logic
+ * (BitMidiHtmlParser) against canned HTML shaped like a real BitMidi page.
+ */
 class BitMidiServiceTest
 {
+    private static final String BASE_URL = "https://bitmidi.com/";
+    private static final String TRACK_TITLE = "Mario Bros Theme.mid";
+    private static final String TRACK_PAGE_URL = "https://bitmidi.com/mario-bros-theme-mid";
+    private static final String DOWNLOAD_URL = "https://bitmidi.com/uploads/mario-bros-theme.mid";
+    private static final byte[] MIDI_BYTES = {0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06};
+
     private BitMidiService service;
     private BitMidiApi api;
 

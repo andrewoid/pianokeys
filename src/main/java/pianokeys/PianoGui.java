@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.function.Supplier;
 
 public class PianoGui extends JFrame
@@ -26,6 +27,7 @@ public class PianoGui extends JFrame
     private PianoSound sound;
     private PianoController controller;
     private BitMidiSearchGui bitMidiSearchGui;
+    private RecordingsGui recordingsGui;
 
     public PianoGui()
     {
@@ -162,7 +164,31 @@ public class PianoGui extends JFrame
         bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
 
-        topPanel.add(buttonPanel, BorderLayout.CENTER);
+        JButton recordings = new JButton("My Recordings");
+        recordings.addActionListener(e -> openRecordings());
+        buttonPanel.add(recordings);
+
+        JButton record = new JButton(new ImageIcon(getClass().getResource("/images/record.png")));
+        record.setToolTipText("Click to start recording what you play");
+        record.addActionListener(e ->
+        {
+            if (controller.isCapturingRecording())
+            {
+                File saved = controller.stopRecordingAndSave();
+                record.setBackground(null);
+                record.setToolTipText(saved != null
+                        ? "Saved as " + saved.getName() + " - click to record again"
+                        : "Click to start recording what you play");
+            } else
+            {
+                controller.startRecording();
+                record.setBackground(Color.RED);
+                record.setToolTipText("Recording - click to stop and save");
+            }
+        });
+        buttonPanel.add(record);
+
+        topPanel.add(buttonPanel, BorderLayout.SOUTH);
         contentPanel.add(topPanel, BorderLayout.NORTH);
 
         // Scrubber (progress bar): drag up/down to jump earlier or later in the song,
@@ -310,5 +336,16 @@ public class PianoGui extends JFrame
 
         bitMidiSearchGui.setVisible(true);
         bitMidiSearchGui.toFront();
+    }
+
+    private void openRecordings()
+    {
+        if (recordingsGui == null)
+        {
+            recordingsGui = new RecordingsGui(() -> controller);
+            recordingsGui.setLocationRelativeTo(this);
+        }
+        recordingsGui.setVisible(true);
+        recordingsGui.toFront();
     }
 }
