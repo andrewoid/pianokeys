@@ -101,11 +101,21 @@ public class PianoController
         pianoView.showKeyPlayed(note, false);
     }
 
+    /**
+     * Start (or resume) the song. Returns false if already playing, or if the playhead
+     * is already at the end (user should drag the scrubber back first, like a music app).
+     */
     public boolean playComposition()
     {
         if (fallingNotesController != null)
         {
             if (fallingNotesController.isRunning())
+            {
+                return false;
+            }
+            // At the very end of the song — Play alone will not restart it.
+            if (fallingNotesController.getCurrentTime()
+                    >= fallingNotesController.getComposition().duration())
             {
                 return false;
             }
@@ -120,6 +130,15 @@ public class PianoController
             return true;
         }
         return false;
+    }
+
+    /** Move the song and falling tiles to a time in seconds from the start (0 = beginning). */
+    public void seekTo(double timeSeconds)
+    {
+        if (fallingNotesController != null)
+        {
+            fallingNotesController.seekTo(timeSeconds);
+        }
     }
 
     public void stopComposition()
