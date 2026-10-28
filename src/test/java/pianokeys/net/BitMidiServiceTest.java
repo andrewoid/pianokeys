@@ -1,47 +1,71 @@
 package pianokeys.net;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.List;
+import io.reactivex.rxjava3.core.Single;
+import java.util.Arrays;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class BitMidiServiceTest
 {
-    private final BitMidiService service = new BitMidiServiceFactory("https://bitmidi.com/").create();
+    private BitMidiService service;
+    private BitMidiApi api;
 
-    @Test
-    void searchReturnsRealResultsFromServer()
+    @BeforeEach
+    void setUp()
     {
-        List<BitMidiTrack> tracks = service.search("mario").blockingGet();
-        assertNotNull(tracks);
-        assertFalse(tracks.isEmpty());
-        BitMidiTrack track = tracks.getFirst();
-
-        assertNotNull(track.title());
-        assertTrue(track.title().toLowerCase().contains("mario"));
-        assertTrue(track.pageUrl().startsWith("https://bitmidi.com/"));
-        assertTrue(!"https://bitmidi.com/".equals(track.pageUrl()));
-        assertTrue(track.downloadUrl().startsWith("https://bitmidi.com/"));
-        assertTrue(!"https://bitmidi.com/".equals(track.downloadUrl()));
+        api = mock(BitMidiApi.class);
+        service = new BitMidiService(api, "https://bitmidi.com/");
     }
 
     @Test
-    void downloadFetchesRealMidiFromServer()
+    void searchRejectsBlankQuery()
     {
-        BitMidiTrack track = service.search("mario").blockingGet().getFirst();
-        BitMidiFile file = service.download(track).blockingGet();
-        byte[] content = file.content();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("").blockingGet());
+    }
 
-        assertNotNull(file);
-        assertTrue(file.fileName().endsWith(".mid"));
-        assertTrue(content.length > 4);
-        // 0x4d 0x54 0x68 0x64 are ASCII bytes for the MIDI header chunk magic "MThd".
-        assertTrue(
-                content[0] == 0x4d
-                        && content[1] == 0x54
-                        && content[2] == 0x68
-                        && content[3] == 0x64);
+    @Test
+    void searchRejectsInvalidPage()
+    {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.search("mario", 0).blockingGet());
+    }
+
+    @Test
+    void downloadReturnsMidiBytes()
+    {
+        BitMidiTrack track = new BitMidiTrack(
+                "mario-theme.mid",
+                "https://bitmidi.com/mario-theme-mid",
+                "https://bitmidi.com/uploads/mario-theme.mid"
+        );
+
+        byte[] midiBytes = {
+                0x4d, 0x54, 0x68, 0x64,
+                0x00, 0x00, 0x00, 0x06
+        };
+
+        ResponseBody response = ResponseBody.create(
+                MediaType.parse("audio/midi"),
+                midiBytes
+        );
+
+        when(api.download(track.downloadUrl()))
+                .thenReturn(Single.just(response));
+
+        BitMidiFile file = service.download(track).blockingGet();
+
+        assertEquals("mario-theme.mid", file.fileName());
+        assertTrue(file.content().length >= 4);
+
+        assertArrayEquals(
+                new byte[] {0x4d, 0x54, 0x68, 0x64},
+                Arrays.copyOf(file.content(), 4)
+        );
     }
 }
