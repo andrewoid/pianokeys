@@ -48,11 +48,11 @@ public class CompositionRunnable implements Runnable
 
                 if (note.endTime() == time)
                 {
-                    controller.stopNote(note.key());
+                    controller.stopPlaybackNote(note.key());
 
                 } else if (note.startTime() == time)
                 {
-                    controller.playNote(note.key());
+                    controller.playPlaybackNote(note.key());
                 }
 
             }
@@ -70,7 +70,7 @@ public class CompositionRunnable implements Runnable
 
         for (Note note : composition.getNoteList())
         {
-            controller.stopNote(note.key());
+            controller.stopPlaybackNote(note.key());
         }
 
         controller.setRecording(true);
