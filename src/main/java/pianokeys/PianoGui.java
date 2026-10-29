@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class PianoGui extends JFrame
@@ -159,9 +160,8 @@ public class PianoGui extends JFrame
         buttonPanel.add(volumeLabel);
         buttonPanel.add(volumeSlider);
 
+        // its click listener is added below, once the scrubber it updates exists
         JButton bitMidiSearch = new JButton("Search BitMidi");
-
-        bitMidiSearch.addActionListener(e -> openBitMidiSearch());
         buttonPanel.add(bitMidiSearch);
 
         JButton recordings = new JButton("My Recordings");
@@ -226,6 +226,23 @@ public class PianoGui extends JFrame
                     currentTimeLabel.setText(formatTime(timeSeconds));
                     updatingSlider[0] = false;
                 }));
+
+        // a song picked in the BitMidi window replaces the song on screen
+        bitMidiSearch.addActionListener(e -> openBitMidiSearch(song ->
+        {
+            controller.loadComposition(song);
+            songTitle.setText(song.getName());
+            play.setIcon(new ImageIcon(getClass().getResource("/images/play.png")));
+
+            // the new song has a different length, so the scrubber has to be resized
+            double newDuration = Math.max(composition.duration(), 0.001);
+            updatingSlider[0] = true;
+            seekSlider.setMaximum(Math.max(1, (int) Math.round(newDuration * 1000)));
+            seekSlider.setValue(0);
+            updatingSlider[0] = false;
+            durationLabel.setText(formatTime(newDuration));
+            currentTimeLabel.setText(formatTime(0));
+        }));
 
         JPanel scrubberPanel = new JPanel(new BorderLayout(0, 8));
         scrubberPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 12));
@@ -326,11 +343,11 @@ public class PianoGui extends JFrame
         });
     }
 
-    private void openBitMidiSearch()
+    private void openBitMidiSearch(Consumer<Composition> songLoader)
     {
         if (bitMidiSearchGui == null)
         {
-            bitMidiSearchGui = new BitMidiSearchGui();
+            bitMidiSearchGui = new BitMidiSearchGui(songLoader);
             bitMidiSearchGui.setLocationRelativeTo(this);
         }
 
