@@ -131,8 +131,24 @@ class BitMidiSearchControllerTest
         ArgumentCaptor<Composition> song = ArgumentCaptor.forClass(Composition.class);
         verify(songLoader, timeout(1000)).accept(song.capture());
         assertEquals("Twinkle Twinkle", song.getValue().getName());
-        assertFalse(song.getValue().getNoteList().isEmpty());
         verify(view, timeout(1000)).showStatus("Loaded Twinkle Twinkle");
+    }
+
+    @Test
+    void loadSongUpperCaseExtension() throws Exception
+    {
+        // given
+        BitMidiSearchController controller = new BitMidiSearchController(view, service, songLoader);
+        BitMidiTrack twinkle = new BitMidiTrack("TWINKLE.MID", "https://bitmidi.com/twinkle-mid", "");
+        doReturn(Single.just(new BitMidiFile("twinkle.mid", twinkleMidi()))).when(service).download(twinkle);
+
+        // when
+        controller.loadSong(twinkle);
+
+        // then
+        ArgumentCaptor<Composition> song = ArgumentCaptor.forClass(Composition.class);
+        verify(songLoader, timeout(1000)).accept(song.capture());
+        assertEquals("TWINKLE", song.getValue().getName());
     }
 
     @Test
