@@ -2,10 +2,13 @@ package pianokeys;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -59,5 +62,35 @@ class CompositionTest
         assertTrue(composition.getNoteList().contains(note2));
     }
 
+    @Test
+    void fromMidiBytes() throws Exception
+    {
+        // given
+        byte[] midi;
+        try (InputStream input = getClass().getResourceAsStream("/twinkle-twinkle-little-star.mid"))
+        {
+            midi = input.readAllBytes();
+        }
 
+        // when
+        Composition composition = new Composition().fromMidiBytes("Twinkle", midi);
+
+        // then
+        assertEquals("Twinkle", composition.getName());
+        assertFalse(composition.getNoteList().isEmpty());
+    }
+
+    @Test
+    void fromMidiBytesNotMidi()
+    {
+        // given
+        byte[] notMidi = "<html></html>".getBytes();
+
+        // when
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> new Composition().fromMidiBytes("page", notMidi));
+
+        // then
+        assertEquals("page is not a MIDI file", error.getMessage());
+    }
 }

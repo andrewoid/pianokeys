@@ -1,6 +1,7 @@
 package pianokeys;
 
 import org.junit.jupiter.api.Test;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -149,5 +150,40 @@ class PianoControllerTest
 
         // then
         assertEquals(0, composition.getNoteList().size());
+    }
+
+
+    @Test
+    void loadComposition()
+    {
+        // given
+        composition.addNote(new Note(60, 0, 0.125));
+        Composition song = new Composition("song");
+        song.addNote(new Note(62, 0, 0.5));
+        PianoController controller = new PianoController(compositionView, sound, composition, pianoView);
+
+        // when
+        controller.loadComposition(song);
+
+        // then
+        assertEquals(List.of(new Note(62, 0, 0.5)), composition.getNoteList());
+        verify(compositionView).setCurrentTime(0);
+    }
+
+    @Test
+    void loadCompositionWithFallingNotes()
+    {
+        // given
+        FallingNotesController fallingNotesController = mock();
+        Composition song = new Composition("song");
+        PianoController controller = new PianoController(compositionView, sound, composition, pianoView);
+        controller.setFallingNotesController(fallingNotesController);
+
+        // when
+        controller.loadComposition(song);
+
+        // then
+        verify(fallingNotesController).stop();
+        verify(fallingNotesController).loadComposition(song);
     }
 }
